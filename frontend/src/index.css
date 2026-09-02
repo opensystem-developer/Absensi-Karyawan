@@ -290,6 +290,55 @@ tr:hover td {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+.date-input-wrap {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.date-input-text {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: white;
+  font-size: 0.9rem;
+  min-width: 0;
+}
+
+.date-input-text:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  z-index: 1;
+}
+
+.date-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0 8px 8px 0;
+  background: #f8fafc;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.date-picker-btn:hover {
+  background: #e2e8f0;
+  color: var(--primary);
+}
+
+.date-input-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .form-section-title {
   grid-column: 1 / -1;
   font-size: 0.85rem;
