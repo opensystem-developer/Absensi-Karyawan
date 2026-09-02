@@ -12,6 +12,7 @@ export default function EntityManager({
   FormComponent,
   renderCard,
   addLabel,
+  writable = true,
 }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +83,7 @@ export default function EntityManager({
   }
 
   if (showForm) {
+    if (!writable) return null;
     return (
       <>
         <button className="btn btn-secondary btn-sm" style={{ marginBottom: '1rem' }} onClick={closeForm}>
@@ -102,28 +104,34 @@ export default function EntityManager({
 
   return (
     <>
+      {writable && (
       <div className="toolbar" style={{ marginBottom: '1rem' }}>
         <button className="btn btn-primary" onClick={openCreate}>+ {addLabel}</button>
       </div>
+      )}
 
       {loading ? (
         <div className="loading">Memuat data...</div>
       ) : items.length === 0 ? (
         <div className="empty-state">
           <p>Belum ada {entityLabel.toLowerCase()} terdaftar.</p>
+          {writable && (
           <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={openCreate}>
             {addLabel} Pertama
           </button>
+          )}
         </div>
       ) : (
         <div className="entity-list">
           {items.map((item) => (
             <div key={item.id} className="entity-card">
               {renderCard(item)}
+              {writable && (
               <div className="actions" style={{ marginTop: '0.75rem' }}>
                 <button className="btn btn-secondary btn-sm" onClick={() => openEdit(item)}>Edit</button>
                 <button className="btn btn-danger btn-sm" onClick={() => handleDelete(item.id, item.nama || item.type || item.tingkat)}>Hapus</button>
               </div>
+              )}
             </div>
           ))}
         </div>

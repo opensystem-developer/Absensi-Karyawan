@@ -15,7 +15,7 @@ function Field({ label, required, children }) {
   );
 }
 
-export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error, saving, isEdit }) {
+export function KaryawanFormFields({ form, onChange, isEdit, readOnly = false }) {
   const [branches, setBranches] = useState([]);
   const [previewNo, setPreviewNo] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -43,10 +43,8 @@ export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error
   const set = (field) => (e) => onChange({ ...form, [field]: e.target.value });
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
-      {error && <div className="error-banner">{error}</div>}
-
-      <div className="form-grid">
+    <fieldset disabled={readOnly} className="form-fieldset">
+    <div className="form-grid">
         <div className="form-section-title">Penempatan & Nomor Karyawan</div>
 
         <Field label="Cabang" required={!isEdit}>
@@ -151,8 +149,16 @@ export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error
           <label>Keterangan</label>
           <textarea rows={3} value={form.keterangan} onChange={set('keterangan')} />
         </div>
-      </div>
+    </div>
+    </fieldset>
+  );
+}
 
+export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error, saving, isEdit }) {
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
+      {error && <div className="error-banner">{error}</div>}
+      <KaryawanFormFields form={form} onChange={onChange} isEdit={isEdit} />
       <div className="modal-footer" style={{ padding: '1rem 0 0', border: 'none' }}>
         <button type="button" className="btn btn-secondary" onClick={onCancel}>Batal</button>
         <button type="submit" className="btn btn-primary" disabled={saving || (!isEdit && !form.branch_id)}>

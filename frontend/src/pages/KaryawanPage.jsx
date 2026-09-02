@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchKaryawan, createKaryawan, updateKaryawan, deleteKaryawan, fetchKaryawanSetupStatus } from '../api';
 import { EMPTY_FORM, toFormData, formatDate, badgeClass, STATUS_OPTIONS } from '../constants';
 import { useAuth } from '../context/AuthContext';
-import KaryawanForm from '../components/KaryawanForm';
-import KaryawanDetailModal from '../components/KaryawanDetailModal';
+import KaryawanModal from '../components/KaryawanModal';
 
 const FLOW_STEPS = ['Perusahaan', 'Cabang', 'Departemen', 'Jabatan', 'Status Karyawan'];
 
@@ -14,7 +13,6 @@ export default function KaryawanPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [detailKaryawan, setDetailKaryawan] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [error, setError] = useState('');
@@ -51,17 +49,10 @@ export default function KaryawanPage() {
     return () => clearTimeout(timer);
   }, [loadData]);
 
-  function openCreate() {
-    if (!setupStatus.ready) return;
-    setEditingId(null);
-    setForm({ ...EMPTY_FORM });
-    setError('');
-    setModalOpen(true);
-  }
-
-  function openEdit(item) {
-    setEditingId(item.id);
-    setForm(toFormData(item));
+  function openModal(item = null) {
+    if (!item && !setupStatus.ready) return;
+    setEditingId(item?.id ?? null);
+    setForm(item ? toFormData(item) : { ...EMPTY_FORM });
     setError('');
     setModalOpen(true);
   }
@@ -76,15 +67,27 @@ export default function KaryawanPage() {
     setSaving(true);
     setError('');
     try {
-      if (editingId) await updateKaryawan(editingId, form);
-      else await createKaryawan(form);
-      closeModal();
+      let saved;
+      if (editingId) {
+        saved = await updateKaryawan(editingId, form);
+      } else {
+        saved = await createKaryawan(form);
+        setEditingId(saved.id);
+        setForm(toFormData(saved));
+      }
       loadData();
+      return saved;
     } catch (err) {
       setError(err.message);
+      return null;
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleSaved(saved) {
+    setEditingId(saved.id);
+    setForm(toFormData(saved));
   }
 
   async function handleDelete(id, nama) {
@@ -105,7 +108,7 @@ export default function KaryawanPage() {
           <p>Kelola data karyawan perusahaan</p>
         </div>
         {writable && (
-          <button className="btn btn-primary" onClick={openCreate} disabled={!setupStatus.ready}>
+          <button className="btn btn-primary" onClick={() => openModal()} disabled={!setupStatus.ready}>
             + Tambah Karyawan
           </button>
         )}
@@ -156,7 +159,7 @@ export default function KaryawanPage() {
           <div className="empty-state">
             <p>Belum ada data karyawan.</p>
             {setupStatus.ready && writable && (
-              <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={openCreate}>
+              <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => openModal()}>
                 Tambah Karyawan Pertama
               </button>
             )}
@@ -184,8 +187,7 @@ export default function KaryawanPage() {
                     <td><span className={`badge ${badgeClass(k.status_karyawan)}`}>{k.status_karyawan}</span></td>
                     <td>
                       <div className="actions">
-                        <button className="btn btn-secondary btn-sm" onClick={() => setDetailKaryawan(k)}>Detail</button>
-                        {writable && <button className="btn btn-secondary btn-sm" onClick={() => openEdit(k)}>Edit</button>}
+                        <button className="btn btn-secondary btn-sm" onClick={() => openModal(k)}>Detail</button>
                         {writable && <button className="btn btn-danger btn-sm" onClick={() => handleDelete(k.id, k.nama_lengkap)}>Hapus</button>}
                       </div>
                     </td>
@@ -197,27 +199,18 @@ export default function KaryawanPage() {
         )}
       </div>
 
-      {detailKaryawan && <KaryawanDetailModal karyawan={detailKaryawan} onClose={() => setDetailKaryawan(null)} />}
       {modalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editingId ? 'Edit Karyawan' : 'Tambah Karyawan'}</h2>
-              <button className="modal-close" onClick={closeModal}>&times;</button>
-            </div>
-            <div className="modal-body">
-              <KaryawanForm
-                form={form}
-                onChange={setForm}
-                onSubmit={handleSubmit}
-                onCancel={closeModal}
-                error={error}
-                saving={saving}
-                isEdit={!!editingId}
-              />
-            </div>
-          </div>
-        </div>
+        <KaryawanModal
+          employeeId={editingId}
+          form={form}
+          onChange={setForm}
+          onSubmit={handleSubmit}
+          onCancel={closeModal}
+          onSaved={handleSaved}
+          error={error}
+          saving={saving}
+          writable={writable}
+        />
       )}
     </div>
   );

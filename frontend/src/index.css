@@ -365,7 +365,48 @@ tr:hover td {
 }
 
 .modal-wide {
-  max-width: 700px;
+  max-width: 900px;
+  width: 95vw;
+}
+
+.modal-tall {
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-footer-sticky {
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.form-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.tab-btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.info-banner {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
 }
 
 .modal-subtitle {
