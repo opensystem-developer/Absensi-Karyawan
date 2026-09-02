@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchKaryawan, createKaryawan, updateKaryawan, deleteKaryawan } from './api';
 import { EMPTY_FORM, toFormData, formatDate, badgeClass, STATUS_OPTIONS } from './constants';
 import KaryawanForm from './components/KaryawanForm';
+import AlamatModal from './components/AlamatModal';
 
 export default function App() {
   const [karyawanList, setKaryawanList] = useState([]);
@@ -9,6 +10,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [alamatKaryawan, setAlamatKaryawan] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [error, setError] = useState('');
@@ -147,6 +149,7 @@ export default function App() {
                       <td><span className={`badge ${badgeClass(k.status_karyawan)}`}>{k.status_karyawan}</span></td>
                       <td>
                         <div className="actions">
+                          <button className="btn btn-secondary btn-sm" onClick={() => setAlamatKaryawan(k)}>Alamat</button>
                           <button className="btn btn-secondary btn-sm" onClick={() => openEdit(k)}>Edit</button>
                           <button className="btn btn-danger btn-sm" onClick={() => handleDelete(k.id, k.nama_lengkap)}>Hapus</button>
                         </div>
@@ -159,6 +162,10 @@ export default function App() {
           )}
         </div>
       </main>
+
+      {alamatKaryawan && (
+        <AlamatModal karyawan={alamatKaryawan} onClose={() => setAlamatKaryawan(null)} />
+      )}
 
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>

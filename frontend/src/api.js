@@ -44,3 +44,40 @@ export async function deleteKaryawan(id) {
   if (!res.ok) throw new Error(json.error || 'Gagal menghapus karyawan');
   return json;
 }
+
+const alamatBase = (employeeId) => `${API_BASE}/${employeeId}/alamat`;
+
+export async function fetchAlamat(employeeId) {
+  const res = await fetch(alamatBase(employeeId));
+  if (!res.ok) throw new Error('Gagal memuat data alamat');
+  return res.json();
+}
+
+export async function createAlamat(employeeId, data) {
+  const res = await fetch(alamatBase(employeeId), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Gagal menambah alamat');
+  return json;
+}
+
+export async function updateAlamat(employeeId, id, data) {
+  const res = await fetch(`${alamatBase(employeeId)}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Gagal memperbarui alamat');
+  return json;
+}
+
+export async function deleteAlamat(employeeId, id) {
+  const res = await fetch(`${alamatBase(employeeId)}/${id}`, { method: 'DELETE' });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Gagal menghapus alamat');
+  return json;
+}

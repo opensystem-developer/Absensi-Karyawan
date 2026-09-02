@@ -36,6 +36,23 @@ Aplikasi web untuk mengelola data karyawan perusahaan.
 | created_at | DATETIME | Waktu dibuat |
 | updated_at | DATETIME | Waktu terakhir diubah |
 
+### Alamat Karyawan
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| id | BIGINT PK | Primary key |
+| employee_id | BIGINT FK | Referensi ke karyawan.id |
+| type | VARCHAR(20) | KTP / DOMISILI |
+| alamat | TEXT | Alamat lengkap |
+| rt | VARCHAR(10) | RT |
+| rw | VARCHAR(10) | RW |
+| kelurahan | VARCHAR(100) | Kelurahan |
+| kecamatan | VARCHAR(100) | Kecamatan |
+| kota | VARCHAR(100) | Kota/Kabupaten |
+| provinsi | VARCHAR(100) | Provinsi |
+| kode_pos | VARCHAR(10) | Kode pos |
+| is_primary | BOOLEAN | Alamat utama |
+
 ## Tech Stack
 
 - **Backend**: Node.js, Express, SQLite (better-sqlite3)
@@ -72,3 +89,7 @@ Aplikasi web berjalan di `http://localhost:5173`
 | POST | `/api/karyawan` | Tambah karyawan baru |
 | PUT | `/api/karyawan/:id` | Perbarui data karyawan |
 | DELETE | `/api/karyawan/:id` | Hapus karyawan |
+| GET | `/api/karyawan/:employeeId/alamat` | Daftar alamat karyawan |
+| POST | `/api/karyawan/:employeeId/alamat` | Tambah alamat |
+| PUT | `/api/karyawan/:employeeId/alamat/:id` | Update alamat |
+| DELETE | `/api/karyawan/:employeeId/alamat/:id` | Hapus alamat |

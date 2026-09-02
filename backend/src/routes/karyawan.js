@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import db from '../db.js';
+import alamatRouter from './alamat.js';
 
 const router = Router();
 
@@ -59,6 +60,8 @@ router.get('/', (req, res) => {
     handleDbError(err, res);
   }
 });
+
+router.use('/:employeeId/alamat', alamatRouter);
 
 router.get('/:id', (req, res) => {
   try {

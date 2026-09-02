@@ -315,6 +315,66 @@ tr:hover td {
   color: var(--text-muted);
 }
 
+.modal-wide {
+  max-width: 700px;
+}
+
+.modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+  font-weight: 400;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  padding: 0.55rem 0;
+}
+
+.alamat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alamat-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: #fafbfc;
+}
+
+.alamat-card.alamat-primary {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+
+.alamat-card-header {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.badge-type-ktp { background: #e0e7ff; color: #3730a3; }
+.badge-type-domisili { background: #fce7f3; color: #9d174d; }
+.badge-primary-tag { background: #dbeafe; color: #1e40af; }
+
+.alamat-text {
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+
+.alamat-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 @media (max-width: 640px) {
   .container { padding: 1rem; }
   .toolbar { flex-direction: column; align-items: stretch; }
