@@ -28,4 +28,8 @@ export function runMigrations(db) {
     if (!hasColumn(db, table, 'updated_at')) addColumn(db, table, 'updated_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
     for (const [col, def] of AUDIT_COLUMNS) addColumn(db, table, col, def);
   }
+  addColumn(db, 'karyawan', 'branch_id', 'INTEGER REFERENCES branches(id)');
+  if (hasColumn(db, 'karyawan', 'branch_id')) {
+    db.exec('CREATE INDEX IF NOT EXISTS idx_karyawan_branch ON karyawan(branch_id)');
+  }
 }

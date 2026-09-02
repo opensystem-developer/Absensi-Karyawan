@@ -94,6 +94,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS karyawan (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    branch_id INTEGER,
     employee_no VARCHAR(30) NOT NULL UNIQUE,
     nik VARCHAR(20) NOT NULL UNIQUE,
     nama_lengkap VARCHAR(150) NOT NULL,
@@ -113,7 +114,8 @@ db.exec(`
     status_karyawan VARCHAR(30) DEFAULT 'Aktif',
     alasan_keluar TEXT,
     keterangan TEXT,
-    ${AUDIT_COLS}
+    ${AUDIT_COLS},
+    FOREIGN KEY (branch_id) REFERENCES branches(id)
   );
 
   CREATE TABLE IF NOT EXISTS employee_positions (

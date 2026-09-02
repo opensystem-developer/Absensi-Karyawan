@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchKaryawan, createKaryawan, updateKaryawan, deleteKaryawan } from '../api';
+import { Link } from 'react-router-dom';
+import { fetchKaryawan, createKaryawan, updateKaryawan, deleteKaryawan, fetchKaryawanSetupStatus } from '../api';
 import { EMPTY_FORM, toFormData, formatDate, badgeClass, STATUS_OPTIONS } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import KaryawanForm from '../components/KaryawanForm';
 import KaryawanDetailModal from '../components/KaryawanDetailModal';
+
+const FLOW_STEPS = ['Perusahaan', 'Cabang', 'Departemen', 'Jabatan', 'Status Karyawan'];
 
 export default function KaryawanPage() {
   const [karyawanList, setKaryawanList] = useState([]);
@@ -16,8 +19,18 @@ export default function KaryawanPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [setupStatus, setSetupStatus] = useState({ ready: true, missing: [] });
   const { canWrite } = useAuth();
   const writable = canWrite('karyawan');
+
+  const loadSetup = useCallback(async () => {
+    try {
+      const status = await fetchKaryawanSetupStatus();
+      setSetupStatus(status);
+    } catch {
+      setSetupStatus({ ready: false, missing: FLOW_STEPS.map((label) => ({ label })) });
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -31,40 +44,105 @@ export default function KaryawanPage() {
     }
   }, [search, statusFilter]);
 
+  useEffect(() => { loadSetup(); }, [loadSetup]);
+
   useEffect(() => {
     const timer = setTimeout(loadData, 300);
     return () => clearTimeout(timer);
   }, [loadData]);
 
-  function openCreate() { setEditingId(null); setForm({ ...EMPTY_FORM }); setError(''); setModalOpen(true); }
-  function openEdit(item) { setEditingId(item.id); setForm(toFormData(item)); setError(''); setModalOpen(true); }
-  function closeModal() { setModalOpen(false); setEditingId(null); setError(''); }
+  function openCreate() {
+    if (!setupStatus.ready) return;
+    setEditingId(null);
+    setForm({ ...EMPTY_FORM });
+    setError('');
+    setModalOpen(true);
+  }
+
+  function openEdit(item) {
+    setEditingId(item.id);
+    setForm(toFormData(item));
+    setError('');
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditingId(null);
+    setError('');
+  }
 
   async function handleSubmit() {
-    setSaving(true); setError('');
+    setSaving(true);
+    setError('');
     try {
       if (editingId) await updateKaryawan(editingId, form);
       else await createKaryawan(form);
-      closeModal(); loadData();
-    } catch (err) { setError(err.message); }
-    finally { setSaving(false); }
+      closeModal();
+      loadData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id, nama) {
     if (!confirm(`Hapus data karyawan "${nama}"?`)) return;
-    try { await deleteKaryawan(id); loadData(); }
-    catch (err) { alert(err.message); }
+    try {
+      await deleteKaryawan(id);
+      loadData();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   return (
     <div className="page">
       <div className="page-header">
-        <div><h1>Karyawan</h1><p>Kelola data karyawan perusahaan</p></div>
-        {writable && <button className="btn btn-primary" onClick={openCreate}>+ Tambah Karyawan</button>}
+        <div>
+          <h1>Karyawan</h1>
+          <p>Kelola data karyawan perusahaan</p>
+        </div>
+        {writable && (
+          <button className="btn btn-primary" onClick={openCreate} disabled={!setupStatus.ready}>
+            + Tambah Karyawan
+          </button>
+        )}
       </div>
 
+      {!setupStatus.ready && (
+        <div className="setup-banner">
+          <h3>Master data belum lengkap</h3>
+          <p>Lengkapi data berikut sesuai urutan alur sebelum menambah karyawan:</p>
+          <ol className="setup-flow">
+            {FLOW_STEPS.map((step) => {
+              const missing = setupStatus.missing?.find((m) => m.label === step);
+              const paths = {
+                Perusahaan: '/perusahaan', Cabang: '/cabang', Departemen: '/departemen',
+                Jabatan: '/jabatan', 'Status Karyawan': '/status-karyawan',
+              };
+              return (
+                <li key={step} className={missing ? 'setup-missing' : 'setup-done'}>
+                  {missing ? (
+                    <Link to={paths[step]}>{step} — belum ada data</Link>
+                  ) : (
+                    <span>{step} — selesai</span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
       <div className="toolbar">
-        <input className="search-input" placeholder="Cari nama, nomor karyawan, atau NIK..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input
+          className="search-input"
+          placeholder="Cari nama, nomor karyawan, atau NIK..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <select className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Semua Status</option>
           {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -72,20 +150,35 @@ export default function KaryawanPage() {
       </div>
 
       <div className="card">
-        {loading ? <div className="loading">Memuat data...</div> : karyawanList.length === 0 ? (
-          <div className="empty-state"><p>Belum ada data karyawan.</p></div>
+        {loading ? (
+          <div className="loading">Memuat data...</div>
+        ) : karyawanList.length === 0 ? (
+          <div className="empty-state">
+            <p>Belum ada data karyawan.</p>
+            {setupStatus.ready && writable && (
+              <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={openCreate}>
+                Tambah Karyawan Pertama
+              </button>
+            )}
+          </div>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>No. Karyawan</th><th>NIK</th><th>Nama</th><th>JK</th><th>Tgl Masuk</th><th>Status</th><th>Aksi</th></tr>
+                <tr>
+                  <th>No. Karyawan</th><th>NIK</th><th>Nama</th><th>JK</th>
+                  <th>Tgl Masuk</th><th>Status</th><th>Aksi</th>
+                </tr>
               </thead>
               <tbody>
                 {karyawanList.map((k) => (
                   <tr key={k.id}>
                     <td><strong>{k.employee_no}</strong></td>
                     <td>{k.nik}</td>
-                    <td>{k.nama_lengkap}{k.nama_panggilan && <span className="text-muted"> ({k.nama_panggilan})</span>}</td>
+                    <td>
+                      {k.nama_lengkap}
+                      {k.nama_panggilan && <span className="text-muted"> ({k.nama_panggilan})</span>}
+                    </td>
                     <td>{k.jenis_kelamin === 'L' ? 'Laki-laki' : k.jenis_kelamin === 'P' ? 'Perempuan' : '-'}</td>
                     <td>{formatDate(k.tanggal_masuk)}</td>
                     <td><span className={`badge ${badgeClass(k.status_karyawan)}`}>{k.status_karyawan}</span></td>
@@ -113,7 +206,15 @@ export default function KaryawanPage() {
               <button className="modal-close" onClick={closeModal}>&times;</button>
             </div>
             <div className="modal-body">
-              <KaryawanForm form={form} onChange={setForm} onSubmit={handleSubmit} onCancel={closeModal} error={error} saving={saving} isEdit={!!editingId} />
+              <KaryawanForm
+                form={form}
+                onChange={setForm}
+                onSubmit={handleSubmit}
+                onCancel={closeModal}
+                error={error}
+                saving={saving}
+                isEdit={!!editingId}
+              />
             </div>
           </div>
         </div>

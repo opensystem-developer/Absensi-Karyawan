@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { EMPTY_FORM, AGAMA_OPTIONS, STATUS_NIKAH_OPTIONS, STATUS_OPTIONS } from '../constants';
+import { branchesApi, previewEmployeeNo } from '../api';
 import DateInput from './DateInput';
 
 function Field({ label, required, children }) {
@@ -14,6 +16,30 @@ function Field({ label, required, children }) {
 }
 
 export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error, saving, isEdit }) {
+  const [branches, setBranches] = useState([]);
+  const [previewNo, setPreviewNo] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    branchesApi.list().then(setBranches).catch(() => setBranches([]));
+  }, []);
+
+  useEffect(() => {
+    if (isEdit) {
+      setPreviewNo(form.employee_no || '');
+      return;
+    }
+    if (!form.branch_id) {
+      setPreviewNo('');
+      return;
+    }
+    setPreviewLoading(true);
+    previewEmployeeNo(form.branch_id, form.tanggal_masuk || '')
+      .then((res) => setPreviewNo(res.employee_no))
+      .catch(() => setPreviewNo(''))
+      .finally(() => setPreviewLoading(false));
+  }, [form.branch_id, form.tanggal_masuk, form.employee_no, isEdit]);
+
   const set = (field) => (e) => onChange({ ...form, [field]: e.target.value });
 
   return (
@@ -21,11 +47,37 @@ export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error
       {error && <div className="error-banner">{error}</div>}
 
       <div className="form-grid">
-        <div className="form-section-title">Data Identitas</div>
+        <div className="form-section-title">Penempatan & Nomor Karyawan</div>
+
+        <Field label="Cabang" required={!isEdit}>
+          {isEdit ? (
+            <input value={branches.find((b) => b.id === form.branch_id)?.name || form.branch_id || '-'} readOnly disabled />
+          ) : (
+            <select value={form.branch_id} onChange={set('branch_id')} required>
+              <option value="">Pilih cabang terlebih dahulu</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+              ))}
+            </select>
+          )}
+        </Field>
 
         <Field label="Nomor Karyawan" required>
-          <input value={form.employee_no} onChange={set('employee_no')} required placeholder="EMP-001" />
+          <input
+            value={previewLoading ? 'Menghasilkan...' : (previewNo || '')}
+            readOnly
+            disabled
+            placeholder={form.branch_id ? 'Otomatis: 00001/KODE/BLN/YY' : 'Pilih cabang dulu'}
+          />
         </Field>
+        {!isEdit && form.branch_id && (
+          <div className="form-group full-width">
+            <p className="form-hint">Format: <strong>99999/KODE_CABANG/BULAN/TAHUN</strong> (nomor urut digenerate otomatis)</p>
+          </div>
+        )}
+
+        <div className="form-section-title">Data Identitas</div>
+
         <Field label="NIK KTP" required>
           <input value={form.nik} onChange={set('nik')} required maxLength={20} placeholder="3201..." />
         </Field>
@@ -103,7 +155,7 @@ export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error
 
       <div className="modal-footer" style={{ padding: '1rem 0 0', border: 'none' }}>
         <button type="button" className="btn btn-secondary" onClick={onCancel}>Batal</button>
-        <button type="submit" className="btn btn-primary" disabled={saving}>
+        <button type="submit" className="btn btn-primary" disabled={saving || (!isEdit && !form.branch_id)}>
           {saving ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah Karyawan'}
         </button>
       </div>

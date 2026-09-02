@@ -41,6 +41,16 @@ function crud(base) {
   };
 }
 
+export async function fetchKaryawanSetupStatus() {
+  return request(`${API}/karyawan/setup-status`);
+}
+
+export async function previewEmployeeNo(branchId, tanggalMasuk = '') {
+  const q = new URLSearchParams({ branch_id: branchId });
+  if (tanggalMasuk) q.set('tanggal_masuk', tanggalMasuk);
+  return request(`${API}/karyawan/preview-employee-no?${q}`);
+}
+
 export const karyawanApi = crud(`${API}/karyawan`);
 export const companiesApi = crud(`${API}/companies`);
 export const branchesApi = crud(`${API}/branches`);

@@ -1,4 +1,5 @@
 export const EMPTY_FORM = {
+  branch_id: '',
   employee_no: '',
   nik: '',
   nama_lengkap: '',
@@ -37,6 +38,7 @@ export function toFormData(karyawan) {
   data.tanggal_lahir = toInputDate(karyawan.tanggal_lahir);
   data.tanggal_masuk = toInputDate(karyawan.tanggal_masuk);
   data.tanggal_keluar = toInputDate(karyawan.tanggal_keluar);
+  data.branch_id = karyawan.branch_id ?? '';
   return data;
 }
 

@@ -11,11 +11,13 @@ import {
   NOT_DELETED, handleDbError,
 } from '../utils/audit.js';
 import { logActivity, logDataChanges, diffRecords } from '../utils/logging.js';
+import { checkMasterDataReady, assertMasterDataReady } from '../utils/masterData.js';
+import { generateEmployeeNo } from '../utils/employeeNo.js';
 
 const router = Router();
 
 const FIELDS = [
-  'employee_no', 'nik', 'nama_lengkap', 'nama_panggilan', 'jenis_kelamin',
+  'branch_id', 'employee_no', 'nik', 'nama_lengkap', 'nama_panggilan', 'jenis_kelamin',
   'tempat_lahir', 'tanggal_lahir', 'agama', 'status_pernikahan', 'jumlah_anak',
   'no_kk', 'npwp', 'no_bpjs_kesehatan', 'no_bpjs_tk', 'tanggal_masuk',
   'tanggal_keluar', 'status_karyawan', 'alasan_keluar', 'keterangan',
@@ -31,8 +33,32 @@ function pickFields(body) {
   if (data.jumlah_anak !== undefined && data.jumlah_anak !== null) {
     data.jumlah_anak = parseInt(data.jumlah_anak, 10) || 0;
   }
+  if (data.branch_id !== undefined && data.branch_id !== null && data.branch_id !== '') {
+    data.branch_id = parseInt(data.branch_id, 10);
+  }
   return data;
 }
+
+router.get('/setup-status', (_req, res) => {
+  try {
+    res.json(checkMasterDataReady(db));
+  } catch (err) {
+    handleDbError(err, res);
+  }
+});
+
+router.get('/preview-employee-no', (req, res) => {
+  try {
+    const { branch_id, tanggal_masuk } = req.query;
+    if (!branch_id) return res.status(400).json({ error: 'branch_id wajib diisi' });
+    assertMasterDataReady(db);
+    const employeeNo = generateEmployeeNo(db, branch_id, tanggal_masuk || null);
+    res.json({ employee_no: employeeNo });
+  } catch (err) {
+    if (err.status === 400) return res.status(400).json({ error: err.message });
+    handleDbError(err, res);
+  }
+});
 
 router.get('/', (req, res) => {
   try {
@@ -78,10 +104,17 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const userId = getUserId(req);
+    assertMasterDataReady(db);
+
     let data = pickFields(req.body);
-    if (!data.employee_no || !data.nik || !data.nama_lengkap) {
-      return res.status(400).json({ error: 'employee_no, nik, dan nama_lengkap wajib diisi' });
+    if (!data.branch_id) {
+      return res.status(400).json({ error: 'Cabang wajib dipilih sebelum menambah karyawan' });
     }
+    if (!data.nik || !data.nama_lengkap) {
+      return res.status(400).json({ error: 'nik dan nama_lengkap wajib diisi' });
+    }
+
+    data.employee_no = generateEmployeeNo(db, data.branch_id, data.tanggal_masuk || null);
 
     data = withAuditOnCreate(data, userId);
     const cols = Object.keys(data);
@@ -115,6 +148,9 @@ router.put('/:id', (req, res) => {
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'Tidak ada data untuk diperbarui' });
     }
+
+    delete data.employee_no;
+    delete data.branch_id;
 
     data = withAuditOnUpdate(data, userId);
     const sets = Object.keys(data).map((k) => `${k} = ?`).join(', ');
