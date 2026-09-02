@@ -5,6 +5,9 @@ Aplikasi web untuk mengelola data karyawan perusahaan.
 ## Fitur
 
 - CRUD data karyawan lengkap (identitas, dokumen, kepegawaian)
+- CRUD alamat, kontak, keluarga, dan pendidikan per karyawan
+- Soft delete dengan audit trail (created/updated/deleted by & at)
+- Format tanggal tampilan: dd/mm/yyyy
 - Pencarian berdasarkan nama, nomor karyawan, atau NIK
 - Filter berdasarkan status karyawan (Aktif, Nonaktif, Resign, PHK)
 - Validasi data unik untuk nomor karyawan dan NIK
@@ -33,8 +36,17 @@ Aplikasi web untuk mengelola data karyawan perusahaan.
 | status_karyawan | VARCHAR(30) | Aktif / Nonaktif / Resign / PHK |
 | alasan_keluar | TEXT | Alasan keluar |
 | keterangan | TEXT | Catatan umum |
+
+### Field Audit (semua tabel)
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| created_by | VARCHAR(100) | User pembuat |
 | created_at | DATETIME | Waktu dibuat |
-| updated_at | DATETIME | Waktu terakhir diubah |
+| updated_by | VARCHAR(100) | User pengubah terakhir |
+| updated_at | DATETIME | Waktu diubah terakhir |
+| deleted_by | VARCHAR(100) | User penghapus |
+| deleted_at | DATETIME | Waktu dihapus (soft delete) |
 
 ### Alamat Karyawan
 
@@ -52,6 +64,44 @@ Aplikasi web untuk mengelola data karyawan perusahaan.
 | provinsi | VARCHAR(100) | Provinsi |
 | kode_pos | VARCHAR(10) | Kode pos |
 | is_primary | BOOLEAN | Alamat utama |
+
+### Kontak Karyawan
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| id | BIGINT PK | Primary key |
+| employee_id | BIGINT FK | Referensi ke karyawan.id |
+| type | VARCHAR(30) | PERSONAL / EMERGENCY |
+| nama | VARCHAR(150) | Nama kontak |
+| hubungan | VARCHAR(50) | Hubungan dengan karyawan |
+| nomor_telepon | VARCHAR(30) | Nomor telepon |
+| is_primary | BOOLEAN | Kontak utama |
+| keterangan | TEXT | Catatan |
+
+### Keluarga Karyawan
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| id | BIGINT PK | Primary key |
+| employee_id | BIGINT FK | Referensi ke karyawan.id |
+| nama | VARCHAR(150) | Nama anggota keluarga |
+| hubungan | VARCHAR(50) | Istri / Suami / Anak / dll |
+| jenis_kelamin | ENUM('L','P') | Jenis kelamin |
+| tanggal_lahir | DATE | Tanggal lahir |
+| pekerjaan | VARCHAR(100) | Pekerjaan |
+| keterangan | TEXT | Catatan |
+
+### Pendidikan Karyawan
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| id | BIGINT PK | Primary key |
+| employee_id | BIGINT FK | Referensi ke karyawan.id |
+| tingkat | VARCHAR(30) | SD/SMP/SMA/D3/S1/S2/dll |
+| nama_sekolah | VARCHAR(200) | Nama sekolah/universitas |
+| jurusan | VARCHAR(150) | Jurusan |
+| tahun_lulus | YEAR | Tahun lulus |
+| keterangan | TEXT | Catatan |
 
 ## Tech Stack
 
@@ -92,4 +142,18 @@ Aplikasi web berjalan di `http://localhost:5173`
 | GET | `/api/karyawan/:employeeId/alamat` | Daftar alamat karyawan |
 | POST | `/api/karyawan/:employeeId/alamat` | Tambah alamat |
 | PUT | `/api/karyawan/:employeeId/alamat/:id` | Update alamat |
-| DELETE | `/api/karyawan/:employeeId/alamat/:id` | Hapus alamat |
+| DELETE | `/api/karyawan/:employeeId/alamat/:id` | Hapus alamat (soft delete) |
+| GET | `/api/karyawan/:employeeId/kontak` | Daftar kontak karyawan |
+| POST | `/api/karyawan/:employeeId/kontak` | Tambah kontak |
+| PUT | `/api/karyawan/:employeeId/kontak/:id` | Update kontak |
+| DELETE | `/api/karyawan/:employeeId/kontak/:id` | Hapus kontak |
+| GET | `/api/karyawan/:employeeId/keluarga` | Daftar keluarga karyawan |
+| POST | `/api/karyawan/:employeeId/keluarga` | Tambah keluarga |
+| PUT | `/api/karyawan/:employeeId/keluarga/:id` | Update keluarga |
+| DELETE | `/api/karyawan/:employeeId/keluarga/:id` | Hapus keluarga |
+| GET | `/api/karyawan/:employeeId/pendidikan` | Daftar pendidikan karyawan |
+| POST | `/api/karyawan/:employeeId/pendidikan` | Tambah pendidikan |
+| PUT | `/api/karyawan/:employeeId/pendidikan/:id` | Update pendidikan |
+| DELETE | `/api/karyawan/:employeeId/pendidikan/:id` | Hapus pendidikan |
+
+> Header `X-User-Id` digunakan untuk audit trail (created_by, updated_by, deleted_by).

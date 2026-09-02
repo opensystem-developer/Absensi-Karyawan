@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import db from '../db.js';
 import alamatRouter from './alamat.js';
+import kontakRouter from './kontak.js';
+import keluargaRouter from './keluarga.js';
+import pendidikanRouter from './pendidikan.js';
+import {
+  getUserId, withAuditOnCreate, withAuditOnUpdate, softDeleteParams,
+  NOT_DELETED, handleDbError,
+} from '../utils/audit.js';
 
 const router = Router();
 
@@ -24,23 +31,10 @@ function pickFields(body) {
   return data;
 }
 
-function handleDbError(err, res) {
-  if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-    const msg = err.message.includes('employee_no')
-      ? 'Nomor karyawan sudah terdaftar'
-      : err.message.includes('nik')
-        ? 'NIK sudah terdaftar'
-        : 'Data duplikat ditemukan';
-    return res.status(409).json({ error: msg });
-  }
-  console.error(err);
-  return res.status(500).json({ error: 'Terjadi kesalahan server' });
-}
-
 router.get('/', (req, res) => {
   try {
     const { search, status } = req.query;
-    let sql = 'SELECT * FROM karyawan WHERE 1=1';
+    let sql = `SELECT * FROM karyawan WHERE ${NOT_DELETED}`;
     const params = [];
 
     if (search) {
@@ -62,10 +56,13 @@ router.get('/', (req, res) => {
 });
 
 router.use('/:employeeId/alamat', alamatRouter);
+router.use('/:employeeId/kontak', kontakRouter);
+router.use('/:employeeId/keluarga', keluargaRouter);
+router.use('/:employeeId/pendidikan', pendidikanRouter);
 
 router.get('/:id', (req, res) => {
   try {
-    const row = db.prepare('SELECT * FROM karyawan WHERE id = ?').get(req.params.id);
+    const row = db.prepare(`SELECT * FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
     if (!row) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
     res.json(row);
   } catch (err) {
@@ -75,35 +72,44 @@ router.get('/:id', (req, res) => {
 
 router.post('/', (req, res) => {
   try {
-    const data = pickFields(req.body);
+    const userId = getUserId(req);
+    let data = pickFields(req.body);
     if (!data.employee_no || !data.nik || !data.nama_lengkap) {
       return res.status(400).json({ error: 'employee_no, nik, dan nama_lengkap wajib diisi' });
     }
 
+    data = withAuditOnCreate(data, userId);
     const cols = Object.keys(data);
-    const placeholders = cols.map(() => '?').join(', ');
-    const stmt = db.prepare(
-      `INSERT INTO karyawan (${cols.join(', ')}) VALUES (${placeholders})`
-    );
-    const result = stmt.run(...cols.map((c) => data[c]));
+    const result = db.prepare(
+      `INSERT INTO karyawan (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`
+    ).run(...cols.map((c) => data[c]));
     const created = db.prepare('SELECT * FROM karyawan WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(created);
   } catch (err) {
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      const msg = err.message.includes('employee_no')
+        ? 'Nomor karyawan sudah terdaftar'
+        : err.message.includes('nik')
+          ? 'NIK sudah terdaftar'
+          : 'Data duplikat ditemukan';
+      return res.status(409).json({ error: msg });
+    }
     handleDbError(err, res);
   }
 });
 
 router.put('/:id', (req, res) => {
   try {
-    const existing = db.prepare('SELECT id FROM karyawan WHERE id = ?').get(req.params.id);
+    const userId = getUserId(req);
+    const existing = db.prepare(`SELECT id FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
 
-    const data = pickFields(req.body);
+    let data = pickFields(req.body);
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'Tidak ada data untuk diperbarui' });
     }
 
-    data.updated_at = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    data = withAuditOnUpdate(data, userId);
     const sets = Object.keys(data).map((k) => `${k} = ?`).join(', ');
     db.prepare(`UPDATE karyawan SET ${sets} WHERE id = ?`).run(
       ...Object.values(data),
@@ -118,8 +124,15 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   try {
-    const result = db.prepare('DELETE FROM karyawan WHERE id = ?').run(req.params.id);
-    if (result.changes === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
+    const userId = getUserId(req);
+    const existing = db.prepare(`SELECT id FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
+
+    const del = softDeleteParams(userId);
+    db.prepare(
+      `UPDATE karyawan SET deleted_by = ?, deleted_at = ?, updated_by = ?, updated_at = ? WHERE id = ?`
+    ).run(del.deleted_by, del.deleted_at, userId, del.deleted_at, req.params.id);
+
     res.json({ message: 'Karyawan berhasil dihapus' });
   } catch (err) {
     handleDbError(err, res);

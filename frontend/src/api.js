@@ -1,83 +1,78 @@
 const API_BASE = '/api/karyawan';
+const CURRENT_USER = 'admin';
+
+function headers() {
+  return {
+    'Content-Type': 'application/json',
+    'X-User-Id': CURRENT_USER,
+  };
+}
+
+async function request(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...headers(), ...options.headers },
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || 'Terjadi kesalahan');
+  return json;
+}
 
 export async function fetchKaryawan(params = {}) {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);
   if (params.status) query.set('status', params.status);
   const url = query.toString() ? `${API_BASE}?${query}` : API_BASE;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Gagal memuat data karyawan');
-  return res.json();
+  return request(url);
 }
 
 export async function fetchKaryawanById(id) {
-  const res = await fetch(`${API_BASE}/${id}`);
-  if (!res.ok) throw new Error('Karyawan tidak ditemukan');
-  return res.json();
+  return request(`${API_BASE}/${id}`);
 }
 
 export async function createKaryawan(data) {
-  const res = await fetch(API_BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Gagal menambah karyawan');
-  return json;
+  return request(API_BASE, { method: 'POST', body: JSON.stringify(data) });
 }
 
 export async function updateKaryawan(id, data) {
-  const res = await fetch(`${API_BASE}/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Gagal memperbarui karyawan');
-  return json;
+  return request(`${API_BASE}/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
 
 export async function deleteKaryawan(id) {
-  const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Gagal menghapus karyawan');
-  return json;
+  return request(`${API_BASE}/${id}`, { method: 'DELETE' });
 }
 
-const alamatBase = (employeeId) => `${API_BASE}/${employeeId}/alamat`;
-
-export async function fetchAlamat(employeeId) {
-  const res = await fetch(alamatBase(employeeId));
-  if (!res.ok) throw new Error('Gagal memuat data alamat');
-  return res.json();
+function resourceApi(resource) {
+  const base = (employeeId) => `${API_BASE}/${employeeId}/${resource}`;
+  return {
+    fetch: (employeeId) => request(base(employeeId)),
+    create: (employeeId, data) => request(base(employeeId), { method: 'POST', body: JSON.stringify(data) }),
+    update: (employeeId, id, data) => request(`${base(employeeId)}/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (employeeId, id) => request(`${base(employeeId)}/${id}`, { method: 'DELETE' }),
+  };
 }
 
-export async function createAlamat(employeeId, data) {
-  const res = await fetch(alamatBase(employeeId), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Gagal menambah alamat');
-  return json;
-}
+const alamat = resourceApi('alamat');
+const kontak = resourceApi('kontak');
+const keluarga = resourceApi('keluarga');
+const pendidikan = resourceApi('pendidikan');
 
-export async function updateAlamat(employeeId, id, data) {
-  const res = await fetch(`${alamatBase(employeeId)}/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Gagal memperbarui alamat');
-  return json;
-}
+export const fetchAlamat = alamat.fetch;
+export const createAlamat = alamat.create;
+export const updateAlamat = alamat.update;
+export const deleteAlamat = alamat.delete;
 
-export async function deleteAlamat(employeeId, id) {
-  const res = await fetch(`${alamatBase(employeeId)}/${id}`, { method: 'DELETE' });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Gagal menghapus alamat');
-  return json;
-}
+export const fetchKontak = kontak.fetch;
+export const createKontak = kontak.create;
+export const updateKontak = kontak.update;
+export const deleteKontak = kontak.delete;
+
+export const fetchKeluarga = keluarga.fetch;
+export const createKeluarga = keluarga.create;
+export const updateKeluarga = keluarga.update;
+export const deleteKeluarga = keluarga.delete;
+
+export const fetchPendidikan = pendidikan.fetch;
+export const createPendidikan = pendidikan.create;
+export const updatePendidikan = pendidikan.update;
+export const deletePendidikan = pendidikan.delete;

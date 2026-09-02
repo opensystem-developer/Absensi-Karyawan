@@ -1,3 +1,5 @@
+import { toInputDate } from './utils/date';
+
 export const EMPTY_ALAMAT_FORM = {
   type: 'KTP',
   alamat: '',
