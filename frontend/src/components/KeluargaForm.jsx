@@ -1,4 +1,5 @@
 import { HUBUNGAN_KELUARGA_OPTIONS } from '../keluargaConstants';
+import DateInput from './DateInput';
 
 function Field({ label, required, children }) {
   return (
@@ -33,7 +34,7 @@ export default function KeluargaForm({ form, onChange, onSubmit, onCancel, error
           </select>
         </Field>
         <Field label="Tanggal Lahir">
-          <input type="date" value={form.tanggal_lahir} onChange={set('tanggal_lahir')} />
+          <DateInput value={form.tanggal_lahir} onChange={set('tanggal_lahir')} />
         </Field>
         <Field label="Pekerjaan">
           <input value={form.pekerjaan} onChange={set('pekerjaan')} />

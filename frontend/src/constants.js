@@ -24,9 +24,9 @@ export const STATUS_OPTIONS = ['Aktif', 'Nonaktif', 'Resign', 'PHK'];
 export const AGAMA_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
 export const STATUS_NIKAH_OPTIONS = ['Belum Menikah', 'Menikah', 'Cerai', 'Janda', 'Duda'];
 
-import { formatDate, formatDateTime, toInputDate } from './utils/date';
+import { formatDate, formatDateTime, toInputDate, formatMaybeDate } from './utils/date';
 
-export { formatDate, formatDateTime, toInputDate };
+export { formatDate, formatDateTime, toInputDate, formatMaybeDate };
 
 export function toFormData(karyawan) {
   if (!karyawan) return { ...EMPTY_FORM };

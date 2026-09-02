@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { formatDate, toInputDate } from '../utils/date';
+import DateInput from './DateInput';
 
 export default function CrudPage({ title, subtitle, api, columns, fields, canWrite = true, filterBar }) {
   const [items, setItems] = useState([]);
@@ -46,7 +48,7 @@ export default function CrudPage({ title, subtitle, api, columns, fields, canWri
     for (const field of fields) {
       let val = item[field.name];
       if (field.type === 'boolean') val = !!val;
-      if (field.type === 'date' && val) val = val.slice(0, 10);
+      if (field.type === 'date' && val) val = toInputDate(val);
       f[field.name] = val ?? '';
     }
     setForm(f);
@@ -90,6 +92,7 @@ export default function CrudPage({ title, subtitle, api, columns, fields, canWri
     if (col.render) return col.render(item);
     const val = item[col.key];
     if (col.type === 'boolean') return val ? 'Aktif' : 'Nonaktif';
+    if (col.type === 'date') return formatDate(val);
     return val ?? '-';
   }
 
@@ -164,6 +167,12 @@ export default function CrudPage({ title, subtitle, api, columns, fields, canWri
                           <option value="1">Aktif</option>
                           <option value="0">Nonaktif</option>
                         </select>
+                      ) : field.type === 'date' ? (
+                        <DateInput
+                          value={form[field.name]}
+                          onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
+                          required={field.required}
+                        />
                       ) : (
                         <input
                           type={field.type || 'text'}

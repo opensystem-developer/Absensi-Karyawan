@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchChangeHistory } from '../api';
-import { formatDateTime } from '../constants';
+import { formatDateTime, formatMaybeDate } from '../constants';
 
 export default function ChangeHistoryPage() {
   const [logs, setLogs] = useState([]);
@@ -37,8 +37,8 @@ export default function ChangeHistoryPage() {
                     <td>{l.record_id}</td>
                     <td>{l.action}</td>
                     <td>{l.field_name || '-'}</td>
-                    <td className="cell-truncate">{l.old_value ?? '-'}</td>
-                    <td className="cell-truncate">{l.new_value ?? '-'}</td>
+                    <td className="cell-truncate">{formatMaybeDate(l.old_value)}</td>
+                    <td className="cell-truncate">{formatMaybeDate(l.new_value)}</td>
                     <td>{l.changed_by}</td>
                   </tr>
                 ))}

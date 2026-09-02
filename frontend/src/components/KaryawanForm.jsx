@@ -1,4 +1,5 @@
 import { EMPTY_FORM, AGAMA_OPTIONS, STATUS_NIKAH_OPTIONS, STATUS_OPTIONS } from '../constants';
+import DateInput from './DateInput';
 
 function Field({ label, required, children }) {
   return (
@@ -45,7 +46,7 @@ export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error
           <input value={form.tempat_lahir} onChange={set('tempat_lahir')} />
         </Field>
         <Field label="Tanggal Lahir">
-          <input type="date" value={form.tanggal_lahir} onChange={set('tanggal_lahir')} />
+          <DateInput value={form.tanggal_lahir} onChange={set('tanggal_lahir')} />
         </Field>
         <Field label="Agama">
           <select value={form.agama} onChange={set('agama')}>
@@ -81,10 +82,10 @@ export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error
         <div className="form-section-title">Kepegawaian</div>
 
         <Field label="Tanggal Masuk">
-          <input type="date" value={form.tanggal_masuk} onChange={set('tanggal_masuk')} />
+          <DateInput value={form.tanggal_masuk} onChange={set('tanggal_masuk')} />
         </Field>
         <Field label="Tanggal Keluar">
-          <input type="date" value={form.tanggal_keluar} onChange={set('tanggal_keluar')} />
+          <DateInput value={form.tanggal_keluar} onChange={set('tanggal_keluar')} />
         </Field>
         <Field label="Status Karyawan">
           <select value={form.status_karyawan} onChange={set('status_karyawan')}>

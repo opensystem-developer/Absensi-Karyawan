@@ -12,7 +12,7 @@ import { EMPTY_ALAMAT_FORM, toAlamatFormData, formatAlamatSingkat } from '../ala
 import { EMPTY_KONTAK_FORM, toKontakFormData } from '../kontakConstants';
 import { EMPTY_KELUARGA_FORM, toKeluargaFormData } from '../keluargaConstants';
 import { EMPTY_PENDIDIKAN_FORM, toPendidikanFormData } from '../pendidikanConstants';
-import { formatDate, formatDateTime } from '../constants';
+import { formatDate, formatDateTime, formatMaybeDate } from '../constants';
 import EntityManager from './EntityManager';
 import AlamatForm from './AlamatForm';
 import KontakForm from './KontakForm';
@@ -243,8 +243,8 @@ export default function KaryawanDetailModal({ karyawan, onClose }) {
                       <td>{formatDateTime(c.changed_at)}</td>
                       <td>{c.action}</td>
                       <td>{c.field_name || '-'}</td>
-                      <td className="cell-truncate">{c.old_value ?? '-'}</td>
-                      <td className="cell-truncate">{c.new_value ?? '-'}</td>
+                      <td className="cell-truncate">{formatMaybeDate(c.old_value)}</td>
+                      <td className="cell-truncate">{formatMaybeDate(c.new_value)}</td>
                       <td>{c.changed_by}</td>
                     </tr>
                   ))}
