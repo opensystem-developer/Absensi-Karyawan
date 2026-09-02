@@ -12,6 +12,7 @@ export function createEmployeeResourceRouter(config) {
     required = [],
     validate,
     hasPrimary = false,
+    primaryField = 'is_primary',
     orderBy = 'created_at DESC',
     entityName = 'Data',
     transformResponse = (row) => row,
@@ -27,8 +28,8 @@ export function createEmployeeResourceRouter(config) {
         data[field] = body[field] === '' ? null : body[field];
       }
     }
-    if (data.is_primary !== undefined && data.is_primary !== null) {
-      data.is_primary = toBool(data.is_primary) ? 1 : 0;
+    if (data[primaryField] !== undefined && data[primaryField] !== null) {
+      data[primaryField] = toBool(data[primaryField]) ? 1 : 0;
     }
     if (data.tahun_lulus !== undefined && data.tahun_lulus !== null) {
       data.tahun_lulus = parseInt(data.tahun_lulus, 10) || null;
@@ -39,10 +40,10 @@ export function createEmployeeResourceRouter(config) {
   function clearPrimary(employeeId, exceptId = null) {
     if (!hasPrimary) return;
     if (exceptId) {
-      db.prepare(`UPDATE ${tableName} SET is_primary = 0 WHERE employee_id = ? AND id != ? AND ${NOT_DELETED}`)
+      db.prepare(`UPDATE ${tableName} SET ${primaryField} = 0 WHERE employee_id = ? AND id != ? AND ${NOT_DELETED}`)
         .run(employeeId, exceptId);
     } else {
-      db.prepare(`UPDATE ${tableName} SET is_primary = 0 WHERE employee_id = ? AND ${NOT_DELETED}`)
+      db.prepare(`UPDATE ${tableName} SET ${primaryField} = 0 WHERE employee_id = ? AND ${NOT_DELETED}`)
         .run(employeeId);
     }
   }
@@ -98,19 +99,19 @@ export function createEmployeeResourceRouter(config) {
       }
 
       data.employee_id = parseInt(employeeId, 10);
-      if (hasPrimary && data.is_primary === undefined) data.is_primary = 0;
+      if (hasPrimary && data[primaryField] === undefined) data[primaryField] = 0;
 
       if (hasPrimary) {
         const count = db.prepare(
           `SELECT COUNT(*) as count FROM ${tableName} WHERE employee_id = ? AND ${NOT_DELETED}`
         ).get(employeeId).count;
-        if (count === 0) data.is_primary = 1;
+        if (count === 0) data[primaryField] = 1;
       }
 
       data = withAuditOnCreate(data, userId);
 
       const insert = db.transaction(() => {
-        if (hasPrimary && data.is_primary) clearPrimary(employeeId);
+        if (hasPrimary && data[primaryField]) clearPrimary(employeeId);
         const cols = Object.keys(data);
         const result = db.prepare(
           `INSERT INTO ${tableName} (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`
@@ -143,7 +144,7 @@ export function createEmployeeResourceRouter(config) {
       data = withAuditOnUpdate(data, userId);
 
       const update = db.transaction(() => {
-        if (hasPrimary && data.is_primary) clearPrimary(employeeId, req.params.id);
+        if (hasPrimary && data[primaryField]) clearPrimary(employeeId, req.params.id);
         const sets = Object.keys(data).map((k) => `${k} = ?`).join(', ');
         db.prepare(`UPDATE ${tableName} SET ${sets} WHERE id = ? AND employee_id = ?`)
           .run(...Object.values(data), req.params.id, employeeId);
@@ -170,12 +171,12 @@ export function createEmployeeResourceRouter(config) {
           `UPDATE ${tableName} SET deleted_by = ?, deleted_at = ?, updated_by = ?, updated_at = ? WHERE id = ? AND employee_id = ?`
         ).run(del.deleted_by, del.deleted_at, userId, del.deleted_at, req.params.id, employeeId);
 
-        if (hasPrimary && existing.is_primary) {
+        if (hasPrimary && existing[primaryField]) {
           const next = db.prepare(
             `SELECT id FROM ${tableName} WHERE employee_id = ? AND ${NOT_DELETED} ORDER BY created_at ASC LIMIT 1`
           ).get(employeeId);
           if (next) {
-            db.prepare(`UPDATE ${tableName} SET is_primary = 1, updated_by = ?, updated_at = ? WHERE id = ?`)
+            db.prepare(`UPDATE ${tableName} SET ${primaryField} = 1, updated_by = ?, updated_at = ? WHERE id = ?`)
               .run(userId, del.deleted_at, next.id);
           }
         }

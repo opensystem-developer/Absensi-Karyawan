@@ -4,10 +4,13 @@ import alamatRouter from './alamat.js';
 import kontakRouter from './kontak.js';
 import keluargaRouter from './keluarga.js';
 import pendidikanRouter from './pendidikan.js';
+import posisiRouter from './posisi.js';
+import kontrakRouter from './kontrak.js';
 import {
   getUserId, withAuditOnCreate, withAuditOnUpdate, softDeleteParams,
   NOT_DELETED, handleDbError,
 } from '../utils/audit.js';
+import { logActivity, logDataChanges, diffRecords } from '../utils/logging.js';
 
 const router = Router();
 
@@ -59,6 +62,8 @@ router.use('/:employeeId/alamat', alamatRouter);
 router.use('/:employeeId/kontak', kontakRouter);
 router.use('/:employeeId/keluarga', keluargaRouter);
 router.use('/:employeeId/pendidikan', pendidikanRouter);
+router.use('/:employeeId/posisi', posisiRouter);
+router.use('/:employeeId/kontrak', kontrakRouter);
 
 router.get('/:id', (req, res) => {
   try {
@@ -84,6 +89,8 @@ router.post('/', (req, res) => {
       `INSERT INTO karyawan (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`
     ).run(...cols.map((c) => data[c]));
     const created = db.prepare('SELECT * FROM karyawan WHERE id = ?').get(result.lastInsertRowid);
+    logDataChanges({ tableName: 'karyawan', recordId: created.id, employeeId: created.id, action: 'CREATE', changes: FIELDS.map((f) => ({ field: f, oldValue: null, newValue: created[f] })), changedBy: userId });
+    logActivity({ userId: req.user?.id, username: userId, action: 'CREATE', module: 'karyawan', entityId: created.id, description: `Tambah karyawan ${created.nama_lengkap}`, ip: req.ip });
     res.status(201).json(created);
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -101,7 +108,7 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   try {
     const userId = getUserId(req);
-    const existing = db.prepare(`SELECT id FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
+    const existing = db.prepare(`SELECT * FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
 
     let data = pickFields(req.body);
@@ -116,6 +123,9 @@ router.put('/:id', (req, res) => {
       req.params.id
     );
     const updated = db.prepare('SELECT * FROM karyawan WHERE id = ?').get(req.params.id);
+    const changes = diffRecords(existing, updated, FIELDS);
+    logDataChanges({ tableName: 'karyawan', recordId: updated.id, employeeId: updated.id, action: 'UPDATE', changes, changedBy: userId });
+    logActivity({ userId: req.user?.id, username: userId, action: 'UPDATE', module: 'karyawan', entityId: updated.id, description: `Ubah karyawan ${updated.nama_lengkap}`, ip: req.ip });
     res.json(updated);
   } catch (err) {
     handleDbError(err, res);
@@ -125,7 +135,7 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   try {
     const userId = getUserId(req);
-    const existing = db.prepare(`SELECT id FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
+    const existing = db.prepare(`SELECT * FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
 
     const del = softDeleteParams(userId);
@@ -133,6 +143,8 @@ router.delete('/:id', (req, res) => {
       `UPDATE karyawan SET deleted_by = ?, deleted_at = ?, updated_by = ?, updated_at = ? WHERE id = ?`
     ).run(del.deleted_by, del.deleted_at, userId, del.deleted_at, req.params.id);
 
+    logDataChanges({ tableName: 'karyawan', recordId: existing.id, employeeId: existing.id, action: 'DELETE', changes: [{ field: 'nama_lengkap', oldValue: existing.nama_lengkap, newValue: null }], changedBy: userId });
+    logActivity({ userId: req.user?.id, username: userId, action: 'DELETE', module: 'karyawan', entityId: existing.id, description: `Hapus karyawan ${existing.nama_lengkap}`, ip: req.ip });
     res.json({ message: 'Karyawan berhasil dihapus' });
   } catch (err) {
     handleDbError(err, res);

@@ -3,7 +3,7 @@ export function now() {
 }
 
 export function getUserId(req) {
-  return req.headers['x-user-id'] || req.body?._user || 'system';
+  return req?.user?.username || req.headers['x-user-id'] || req.body?._user || 'system';
 }
 
 export function withAuditOnCreate(data, userId) {

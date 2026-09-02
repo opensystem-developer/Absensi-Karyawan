@@ -1,78 +1,113 @@
-const API_BASE = '/api/karyawan';
-const CURRENT_USER = 'admin';
+const API = '/api';
+
+function getToken() {
+  return localStorage.getItem('token');
+}
 
 function headers() {
-  return {
-    'Content-Type': 'application/json',
-    'X-User-Id': CURRENT_USER,
-  };
+  const h = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
 }
 
 async function request(url, options = {}) {
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...headers(), ...options.headers },
-  });
+  const res = await fetch(url, { ...options, headers: { ...headers(), ...options.headers } });
   const json = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    if (!url.includes('/auth/login')) window.location.href = '/login';
+  }
   if (!res.ok) throw new Error(json.error || 'Terjadi kesalahan');
   return json;
 }
 
-export async function fetchKaryawan(params = {}) {
-  const query = new URLSearchParams();
-  if (params.search) query.set('search', params.search);
-  if (params.status) query.set('status', params.status);
-  const url = query.toString() ? `${API_BASE}?${query}` : API_BASE;
-  return request(url);
+export async function login(username, password) {
+  return request(`${API}/auth/login`, { method: 'POST', body: JSON.stringify({ username, password }) });
 }
 
-export async function fetchKaryawanById(id) {
-  return request(`${API_BASE}/${id}`);
+export async function fetchMe() {
+  return request(`${API}/auth/me`);
 }
 
-export async function createKaryawan(data) {
-  return request(API_BASE, { method: 'POST', body: JSON.stringify(data) });
-}
-
-export async function updateKaryawan(id, data) {
-  return request(`${API_BASE}/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-}
-
-export async function deleteKaryawan(id) {
-  return request(`${API_BASE}/${id}`, { method: 'DELETE' });
-}
-
-function resourceApi(resource) {
-  const base = (employeeId) => `${API_BASE}/${employeeId}/${resource}`;
+function crud(base) {
   return {
-    fetch: (employeeId) => request(base(employeeId)),
-    create: (employeeId, data) => request(base(employeeId), { method: 'POST', body: JSON.stringify(data) }),
-    update: (employeeId, id, data) => request(`${base(employeeId)}/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (employeeId, id) => request(`${base(employeeId)}/${id}`, { method: 'DELETE' }),
+    list: (query = '') => request(`${base}${query ? `?${query}` : ''}`),
+    get: (id) => request(`${base}/${id}`),
+    create: (data) => request(base, { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`${base}/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`${base}/${id}`, { method: 'DELETE' }),
   };
 }
 
-const alamat = resourceApi('alamat');
-const kontak = resourceApi('kontak');
-const keluarga = resourceApi('keluarga');
-const pendidikan = resourceApi('pendidikan');
+export const karyawanApi = crud(`${API}/karyawan`);
+export const companiesApi = crud(`${API}/companies`);
+export const branchesApi = crud(`${API}/branches`);
+export const departmentsApi = crud(`${API}/departments`);
+export const positionsApi = crud(`${API}/positions`);
+export const employmentStatusesApi = crud(`${API}/employment-statuses`);
+export const usersApi = crud(`${API}/users`);
 
-export const fetchAlamat = alamat.fetch;
-export const createAlamat = alamat.create;
-export const updateAlamat = alamat.update;
-export const deleteAlamat = alamat.delete;
+export async function fetchRoles() {
+  return request(`${API}/users/roles`);
+}
 
-export const fetchKontak = kontak.fetch;
-export const createKontak = kontak.create;
-export const updateKontak = kontak.update;
-export const deleteKontak = kontak.delete;
+export async function fetchActivityLog(params = '') {
+  return request(`${API}/logs/activity${params ? `?${params}` : ''}`);
+}
 
-export const fetchKeluarga = keluarga.fetch;
-export const createKeluarga = keluarga.create;
-export const updateKeluarga = keluarga.update;
-export const deleteKeluarga = keluarga.delete;
+export async function fetchChangeHistory(params = '') {
+  return request(`${API}/logs/changes${params ? `?${params}` : ''}`);
+}
 
-export const fetchPendidikan = pendidikan.fetch;
-export const createPendidikan = pendidikan.create;
-export const updatePendidikan = pendidikan.update;
-export const deletePendidikan = pendidikan.delete;
+export async function fetchKaryawanChanges(id) {
+  return request(`${API}/logs/changes/karyawan/${id}`);
+}
+
+const nested = (resource) => ({
+  list: (employeeId) => request(`${API}/karyawan/${employeeId}/${resource}`),
+  create: (employeeId, data) => request(`${API}/karyawan/${employeeId}/${resource}`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (employeeId, id, data) => request(`${API}/karyawan/${employeeId}/${resource}/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (employeeId, id) => request(`${API}/karyawan/${employeeId}/${resource}/${id}`, { method: 'DELETE' }),
+});
+
+export const alamatApi = nested('alamat');
+export const kontakApi = nested('kontak');
+export const keluargaApi = nested('keluarga');
+export const pendidikanApi = nested('pendidikan');
+export const posisiApi = nested('posisi');
+export const kontrakApi = nested('kontrak');
+
+// Backward compat exports
+export const fetchKaryawan = (params = {}) => {
+  const q = new URLSearchParams(params).toString();
+  return karyawanApi.list(q);
+};
+export const createKaryawan = karyawanApi.create;
+export const updateKaryawan = karyawanApi.update;
+export const deleteKaryawan = karyawanApi.delete;
+export const fetchAlamat = alamatApi.list;
+export const createAlamat = alamatApi.create;
+export const updateAlamat = alamatApi.update;
+export const deleteAlamat = alamatApi.delete;
+export const fetchKontak = kontakApi.list;
+export const createKontak = kontakApi.create;
+export const updateKontak = kontakApi.update;
+export const deleteKontak = kontakApi.delete;
+export const fetchKeluarga = keluargaApi.list;
+export const createKeluarga = keluargaApi.create;
+export const updateKeluarga = keluargaApi.update;
+export const deleteKeluarga = keluargaApi.delete;
+export const fetchPendidikan = pendidikanApi.list;
+export const createPendidikan = pendidikanApi.create;
+export const updatePendidikan = pendidikanApi.update;
+export const deletePendidikan = pendidikanApi.delete;
+export const fetchPosisi = posisiApi.list;
+export const createPosisi = posisiApi.create;
+export const updatePosisi = posisiApi.update;
+export const deletePosisi = posisiApi.delete;
+export const fetchKontrak = kontrakApi.list;
+export const createKontrak = kontrakApi.create;
+export const updateKontrak = kontrakApi.update;
+export const deleteKontrak = kontrakApi.delete;

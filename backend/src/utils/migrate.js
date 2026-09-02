@@ -17,17 +17,15 @@ function addColumn(db, table, column, definition) {
 }
 
 export function runMigrations(db) {
-  const tables = ['karyawan', 'alamat_karyawan', 'kontak_karyawan', 'keluarga_karyawan', 'pendidikan_karyawan'];
+  const tables = [
+    'roles', 'users', 'companies', 'branches', 'departments', 'positions',
+    'employment_statuses', 'karyawan', 'employee_positions', 'employee_contracts',
+    'alamat_karyawan', 'kontak_karyawan', 'keluarga_karyawan', 'pendidikan_karyawan',
+  ];
   for (const table of tables) {
     if (!hasColumn(db, table, 'id')) continue;
-    if (!hasColumn(db, table, 'created_at')) {
-      addColumn(db, table, 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
-    }
-    if (!hasColumn(db, table, 'updated_at')) {
-      addColumn(db, table, 'updated_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
-    }
-    for (const [col, def] of AUDIT_COLUMNS) {
-      addColumn(db, table, col, def);
-    }
+    if (!hasColumn(db, table, 'created_at')) addColumn(db, table, 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
+    if (!hasColumn(db, table, 'updated_at')) addColumn(db, table, 'updated_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
+    for (const [col, def] of AUDIT_COLUMNS) addColumn(db, table, col, def);
   }
 }

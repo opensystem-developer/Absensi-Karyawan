@@ -1,30 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   fetchAlamat, createAlamat, updateAlamat, deleteAlamat,
   fetchKontak, createKontak, updateKontak, deleteKontak,
   fetchKeluarga, createKeluarga, updateKeluarga, deleteKeluarga,
   fetchPendidikan, createPendidikan, updatePendidikan, deletePendidikan,
+  fetchPosisi, createPosisi, updatePosisi, deletePosisi,
+  fetchKontrak, createKontrak, updateKontrak, deleteKontrak,
+  fetchKaryawanChanges,
 } from '../api';
 import { EMPTY_ALAMAT_FORM, toAlamatFormData, formatAlamatSingkat } from '../alamatConstants';
 import { EMPTY_KONTAK_FORM, toKontakFormData } from '../kontakConstants';
 import { EMPTY_KELUARGA_FORM, toKeluargaFormData } from '../keluargaConstants';
 import { EMPTY_PENDIDIKAN_FORM, toPendidikanFormData } from '../pendidikanConstants';
-import { formatDate } from '../constants';
+import { formatDate, formatDateTime } from '../constants';
 import EntityManager from './EntityManager';
 import AlamatForm from './AlamatForm';
 import KontakForm from './KontakForm';
 import KeluargaForm from './KeluargaForm';
 import PendidikanForm from './PendidikanForm';
+import PosisiForm, { KontrakForm } from './PosisiKontrakForms';
+import { EMPTY_POSISI_FORM, toPosisiFormData } from '../posisiConstants';
+import { EMPTY_KONTRAK_FORM, toKontrakFormData } from '../kontrakConstants';
 
 const TABS = [
   { id: 'alamat', label: 'Alamat' },
   { id: 'kontak', label: 'Kontak' },
   { id: 'keluarga', label: 'Keluarga' },
   { id: 'pendidikan', label: 'Pendidikan' },
+  { id: 'posisi', label: 'Posisi' },
+  { id: 'kontrak', label: 'Kontrak' },
+  { id: 'riwayat', label: 'Riwayat' },
 ];
 
 export default function KaryawanDetailModal({ karyawan, onClose }) {
   const [activeTab, setActiveTab] = useState('alamat');
+  const [changes, setChanges] = useState([]);
+
+  useEffect(() => {
+    if (activeTab === 'riwayat') {
+      fetchKaryawanChanges(karyawan.id).then(setChanges).catch(() => setChanges([]));
+    }
+  }, [activeTab, karyawan.id]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -158,6 +174,83 @@ export default function KaryawanDetailModal({ karyawan, onClose }) {
                 </>
               )}
             />
+          )}
+
+          {activeTab === 'posisi' && (
+            <EntityManager
+              employeeId={karyawan.id}
+              entityLabel="Posisi"
+              addLabel="Tambah Posisi"
+              emptyForm={EMPTY_POSISI_FORM}
+              toFormData={toPosisiFormData}
+              fetchFn={fetchPosisi}
+              createFn={createPosisi}
+              updateFn={updatePosisi}
+              deleteFn={deletePosisi}
+              FormComponent={PosisiForm}
+              renderCard={(p) => (
+                <>
+                  <div className="entity-card-header">
+                    {p.is_current && <span className="badge badge-primary-tag">Aktif</span>}
+                  </div>
+                  <div className="entity-detail">
+                    {p.start_date && <span>Mulai {formatDate(p.start_date)}</span>}
+                    {p.end_date && <span> s/d {formatDate(p.end_date)}</span>}
+                  </div>
+                  {p.reason && <p className="entity-text">{p.reason}</p>}
+                </>
+              )}
+            />
+          )}
+
+          {activeTab === 'kontrak' && (
+            <EntityManager
+              employeeId={karyawan.id}
+              entityLabel="Kontrak"
+              addLabel="Tambah Kontrak"
+              emptyForm={EMPTY_KONTRAK_FORM}
+              toFormData={toKontrakFormData}
+              fetchFn={fetchKontrak}
+              createFn={createKontrak}
+              updateFn={updateKontrak}
+              deleteFn={deleteKontrak}
+              FormComponent={KontrakForm}
+              renderCard={(k) => (
+                <>
+                  <div className="entity-card-header">
+                    <span className="badge badge-type-ktp">{k.type}</span>
+                    <span className="badge badge-type-domisili">{k.status}</span>
+                  </div>
+                  <p className="entity-text"><strong>{k.contract_no}</strong></p>
+                  <div className="entity-detail">
+                    {k.start_date && <span>{formatDate(k.start_date)}</span>}
+                    {k.end_date && <span> - {formatDate(k.end_date)}</span>}
+                  </div>
+                </>
+              )}
+            />
+          )}
+
+          {activeTab === 'riwayat' && (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Waktu</th><th>Aksi</th><th>Field</th><th>Lama</th><th>Baru</th><th>Oleh</th></tr></thead>
+                <tbody>
+                  {changes.length === 0 ? (
+                    <tr><td colSpan={6} className="empty-state">Belum ada riwayat perubahan</td></tr>
+                  ) : changes.map((c) => (
+                    <tr key={c.id}>
+                      <td>{formatDateTime(c.changed_at)}</td>
+                      <td>{c.action}</td>
+                      <td>{c.field_name || '-'}</td>
+                      <td className="cell-truncate">{c.old_value ?? '-'}</td>
+                      <td className="cell-truncate">{c.new_value ?? '-'}</td>
+                      <td>{c.changed_by}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

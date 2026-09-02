@@ -1,6 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import karyawanRouter from './routes/karyawan.js';
+import authRouter from './routes/auth.js';
+import companiesRouter from './routes/companies.js';
+import branchesRouter from './routes/branches.js';
+import departmentsRouter from './routes/departments.js';
+import positionsRouter from './routes/positions.js';
+import employmentStatusesRouter from './routes/employmentStatuses.js';
+import usersRouter from './routes/users.js';
+import logsRouter from './routes/logs.js';
+import { authenticate, requirePermission } from './middleware/auth.js';
 import './db.js';
 
 const app = express();
@@ -13,7 +22,22 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'karyawan-api' });
 });
 
-app.use('/api/karyawan', karyawanRouter);
+app.use('/api/auth', authRouter);
+
+app.use(authenticate);
+
+app.get('/api/auth/me', (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.use('/api/karyawan', requirePermission('karyawan:read', 'karyawan:write', '*'), karyawanRouter);
+app.use('/api/companies', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), companiesRouter);
+app.use('/api/branches', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), branchesRouter);
+app.use('/api/departments', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), departmentsRouter);
+app.use('/api/positions', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), positionsRouter);
+app.use('/api/employment-statuses', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), employmentStatusesRouter);
+app.use('/api/users', requirePermission('users:read', 'users:write', '*'), usersRouter);
+app.use('/api/logs', requirePermission('logs:read', '*'), logsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server berjalan di http://localhost:${PORT}`);
