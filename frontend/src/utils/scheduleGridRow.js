@@ -1,27 +1,44 @@
 /**
  * Baris karyawan untuk grid jadwal/kehadiran — nama + jabatan singkat + no karyawan.
  */
-export function toScheduleGridRow(employee) {
+export function toScheduleGridRow(employee, positionOverride = null) {
   if (!employee) return null;
-  const positionShort = employee.position_code || '';
+  const positionShort = positionOverride?.position_code || employee.position_code || '';
+  const positionName = positionOverride?.position_name || employee.position_name || '';
   const employeeNo = employee.employee_no || '';
-  const metaParts = [positionShort, employeeNo].filter(Boolean);
 
   return {
     id: employee.id,
     name: employee.nama_lengkap,
     positionShort,
-    positionName: employee.position_name || '',
+    positionName,
     employeeNo,
-    subtitle: metaParts.join(' · '),
+    subtitle: [positionShort, employeeNo].filter(Boolean).join(' · '),
   };
 }
 
-export function toScheduleGridRows(employees, employeeIds = null) {
+function positionMapFromItems(items = []) {
+  const map = new Map();
+  for (const item of items) {
+    const employeeId = item.employee_id;
+    if (!employeeId || map.has(employeeId)) continue;
+    if (item.position_code || item.position_name) {
+      map.set(employeeId, {
+        position_code: item.position_code || '',
+        position_name: item.position_name || '',
+      });
+    }
+  }
+  return map;
+}
+
+export function toScheduleGridRows(employees, employeeIds = null, items = []) {
   const idSet = employeeIds ? new Set(employeeIds) : null;
+  const positionsByEmployee = positionMapFromItems(items);
+
   return employees
     .filter((e) => !idSet || idSet.has(e.id))
-    .map(toScheduleGridRow)
+    .map((e) => toScheduleGridRow(e, positionsByEmployee.get(e.id)))
     .filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name, 'id'));
 }

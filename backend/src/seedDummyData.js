@@ -310,6 +310,53 @@ function upsertEmployee(db, def, ctx) {
   return employeeId;
 }
 
+const LEGACY_POSITION_FIXES = [
+  { employeeId: 1, branch: 'BTN', dept: 'KASIR', position: 'KSR-A' },
+  { employeeId: 2, branch: 'BTN', dept: 'KASIR', position: 'HEAD-KSR' },
+  { employeeId: 3, branch: 'OFFICE', dept: 'IT', position: 'DEV' },
+  { employeeId: 4, branch: 'OFFICE', dept: 'HR', position: 'HR-STAFF' },
+];
+
+function backfillMissingEmployeePositions(db, ctx) {
+  let filled = 0;
+  const { branchMap, deptMap, companyId, employmentStatusId } = ctx;
+  const tanggalMasuk = '2026-09-01';
+
+  for (const fix of LEGACY_POSITION_FIXES) {
+    const exists = db.prepare(`
+      SELECT id FROM employee_positions
+      WHERE employee_id = ? AND deleted_at IS NULL
+    `).get(fix.employeeId);
+    if (exists) continue;
+
+    const employee = db.prepare('SELECT id FROM karyawan WHERE id = ? AND deleted_at IS NULL').get(fix.employeeId);
+    if (!employee) continue;
+
+    const branchId = branchMap[fix.branch];
+    const deptId = deptMap[fix.dept];
+    const positionId = getPositionId(db, fix.dept, fix.position, deptMap);
+    if (!branchId || !deptId || !positionId) continue;
+
+    const posPayload = withAuditOnCreate({
+      employee_id: fix.employeeId,
+      company_id: companyId,
+      branch_id: branchId,
+      department_id: deptId,
+      position_id: positionId,
+      employment_status_id: employmentStatusId,
+      start_date: tanggalMasuk,
+      is_current: 1,
+    }, USER);
+    const cols = Object.keys(posPayload);
+    db.prepare(
+      `INSERT INTO employee_positions (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+    ).run(...cols.map((c) => posPayload[c]));
+    filled += 1;
+  }
+
+  return filled;
+}
+
 /**
  * Isi data dummy: shift lengkap, jabatan per departemen, dan karyawan contoh.
  * Aman dijalankan berulang (upsert / skip duplikat).
@@ -322,6 +369,7 @@ export function seedDummyData(db) {
     positionsCreated: 0,
     positionsUpdated: 0,
     employeesProcessed: 0,
+    positionsBackfilled: 0,
     shiftCount: 0,
     positionCount: 0,
     employeeCount: 0,
@@ -367,6 +415,8 @@ export function seedDummyData(db) {
       const id = upsertEmployee(db, emp, ctx);
       if (id) summary.employeesProcessed += 1;
     }
+
+    summary.positionsBackfilled = backfillMissingEmployeePositions(db, ctx);
   })();
 
   summary.shiftCount = db.prepare('SELECT COUNT(*) as c FROM shifts WHERE deleted_at IS NULL').get().c;

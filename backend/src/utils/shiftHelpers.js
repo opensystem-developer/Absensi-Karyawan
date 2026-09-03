@@ -69,9 +69,31 @@ export function parseIntFields(data, fields) {
   return data;
 }
 
+const POSITION_SUBQUERY_CODE = `
+  (
+    SELECT p.code
+    FROM employee_positions ep
+    JOIN positions p ON p.id = ep.position_id AND p.deleted_at IS NULL
+    WHERE ep.employee_id = k.id AND ep.deleted_at IS NULL
+    ORDER BY ep.is_current DESC, ep.start_date DESC
+    LIMIT 1
+  )`;
+
+const POSITION_SUBQUERY_NAME = `
+  (
+    SELECT p.name
+    FROM employee_positions ep
+    JOIN positions p ON p.id = ep.position_id AND p.deleted_at IS NULL
+    WHERE ep.employee_id = k.id AND ep.deleted_at IS NULL
+    ORDER BY ep.is_current DESC, ep.start_date DESC
+    LIMIT 1
+  )`;
+
 export function listWorkSchedulesGlobal(db, { employeeId, dateFrom, dateTo } = {}) {
   let sql = `
-    SELECT ws.*, k.nama_lengkap AS employee_name, k.employee_no
+    SELECT ws.*, k.nama_lengkap AS employee_name, k.employee_no,
+      ${POSITION_SUBQUERY_CODE} AS position_code,
+      ${POSITION_SUBQUERY_NAME} AS position_name
     FROM work_schedules ws
     JOIN karyawan k ON k.id = ws.employee_id AND k.deleted_at IS NULL
     WHERE ws.deleted_at IS NULL
@@ -86,7 +108,9 @@ export function listWorkSchedulesGlobal(db, { employeeId, dateFrom, dateTo } = {
 
 export function listAttendancesGlobal(db, { employeeId, dateFrom, dateTo, status } = {}) {
   let sql = `
-    SELECT a.*, k.nama_lengkap AS employee_name, k.employee_no
+    SELECT a.*, k.nama_lengkap AS employee_name, k.employee_no,
+      ${POSITION_SUBQUERY_CODE} AS position_code,
+      ${POSITION_SUBQUERY_NAME} AS position_name
     FROM attendances a
     JOIN karyawan k ON k.id = a.employee_id AND k.deleted_at IS NULL
     WHERE a.deleted_at IS NULL

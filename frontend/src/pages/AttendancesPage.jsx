@@ -44,11 +44,15 @@ export default function AttendancesPage() {
   const rows = useMemo(() => {
     if (employeeFilter) {
       const emp = employees.find((e) => String(e.id) === String(employeeFilter));
-      return emp ? [toScheduleGridRow(emp)] : [];
+      const positionItem = items.find((i) => String(i.employee_id) === String(employeeFilter));
+      return emp ? [toScheduleGridRow(emp, positionItem ? {
+        position_code: positionItem.position_code,
+        position_name: positionItem.position_name,
+      } : null)] : [];
     }
 
     const ids = new Set(items.map((i) => i.employee_id));
-    return toScheduleGridRows(employees, ids);
+    return toScheduleGridRows(employees, ids, items);
   }, [employeeFilter, employees, items]);
 
   const employeeFilterSelect = (
