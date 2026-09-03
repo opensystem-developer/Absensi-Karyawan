@@ -540,6 +540,36 @@ tr:hover td {
   background: #fafbfc;
 }
 
+.schedule-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.month-nav-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  min-width: 140px;
+  text-align: center;
+}
+
+.schedule-table th,
+.schedule-table td {
+  white-space: nowrap;
+}
+
+.schedule-table td strong {
+  font-weight: 600;
+}
+
 /* Panel Layout */
 .panel-layout {
   display: flex;

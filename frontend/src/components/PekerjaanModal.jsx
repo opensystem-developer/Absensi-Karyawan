@@ -11,14 +11,14 @@ import { EMPTY_POSISI_FORM, toPosisiFormData } from '../posisiConstants';
 import { EMPTY_KONTRAK_FORM, toKontrakFormData } from '../kontrakConstants';
 import {
   EMPTY_EMPLOYEE_SHIFT_FORM, toEmployeeShiftFormData,
-  EMPTY_WORK_SCHEDULE_FORM, toWorkScheduleFormData,
   EMPTY_ATTENDANCE_FORM, toAttendanceFormData,
-  workScheduleStatusLabel, attendanceStatusLabel, formatTimeRange,
+  attendanceStatusLabel, formatTimeRange,
 } from '../shiftConstants';
 import { PekerjaanFormFields } from './PekerjaanForm';
 import EntityManager from './EntityManager';
 import PosisiForm, { KontrakForm } from './PosisiKontrakForms';
-import { EmployeeShiftForm, WorkScheduleForm, AttendanceForm } from './ShiftForms';
+import { EmployeeShiftForm, AttendanceForm } from './ShiftForms';
+import WorkScheduleTable from './WorkScheduleTable';
 
 const TABS = [
   { id: 'utama', label: 'Data Pekerjaan', always: true },
@@ -211,29 +211,13 @@ export default function PekerjaanModal({
           )}
 
           {activeTab === 'jadwal' && employeeId && (
-            <EntityManager
+            <WorkScheduleTable
               employeeId={employeeId}
-              entityLabel="Jadwal kerja"
-              addLabel="Tambah Jadwal"
-              emptyForm={EMPTY_WORK_SCHEDULE_FORM}
-              toFormData={toWorkScheduleFormData}
               fetchFn={fetchWorkSchedules}
               createFn={createWorkSchedule}
               updateFn={updateWorkSchedule}
               deleteFn={deleteWorkSchedule}
-              FormComponent={WorkScheduleForm}
               writable={writable}
-              renderCard={(j) => (
-                <>
-                  <div className="entity-card-header">
-                    <span className="badge badge-type-ktp">{workScheduleStatusLabel(j.status)}</span>
-                  </div>
-                  <p className="entity-text"><strong>{formatDate(j.work_date)}</strong> — {j.shift_name}</p>
-                  <div className="entity-detail">
-                    <span>{formatTimeRange(j.start_time || j.shift_start, j.end_time || j.shift_end)}</span>
-                  </div>
-                </>
-              )}
             />
           )}
 
