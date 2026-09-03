@@ -107,8 +107,8 @@ export default function WorkSchedulesPage() {
   );
 
   return (
-    <div className="page">
-      <div className="page-header">
+    <div className="page page-fill page-schedule">
+      <div className="page-header page-header-compact">
         <div>
           <h1>Jadwal Kerja</h1>
           <p>Grid jadwal kerja per karyawan dan tanggal (format Excel)</p>
@@ -116,9 +116,9 @@ export default function WorkSchedulesPage() {
         {writable && <button className="btn btn-primary" onClick={() => openCreate()}>+ Tambah Jadwal</button>}
       </div>
 
-      {error && <div className="error-banner" style={{ marginBottom: '1rem' }}>{error}</div>}
+      {error && <div className="error-banner page-schedule-error">{error}</div>}
 
-      <div className="card" style={{ padding: '1rem' }}>
+      <div className="card schedule-page-card">
         <WorkScheduleGrid
           month={month}
           onMonthChange={setMonth}
@@ -130,6 +130,7 @@ export default function WorkSchedulesPage() {
           onCellClick={writable ? handleCellClick : undefined}
           toolbarExtra={employeeFilterSelect}
           emptyMessage={`Belum ada jadwal kerja untuk ${bounds.label}.`}
+          fitMonth
         />
       </div>
 

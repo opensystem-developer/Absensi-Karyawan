@@ -71,11 +71,137 @@ export default function WorkScheduleGrid({
   onCellClick,
   toolbarExtra = null,
   emptyMessage,
+  fitMonth = false,
 }) {
   const bounds = useMemo(() => monthBounds(month), [month]);
   const dates = useMemo(() => buildMonthDates(month), [month]);
   const cellMap = useMemo(() => buildScheduleCellMap(schedules), [schedules]);
   const legend = useMemo(() => buildShiftLegend(shifts, schedules), [shifts, schedules]);
+
+  const gridContent = loading ? (
+    <div className="loading">Memuat jadwal...</div>
+  ) : rows.length === 0 ? (
+    <div className="empty-state">
+      <p>{emptyMessage || `Belum ada jadwal untuk ${bounds.label}.`}</p>
+    </div>
+  ) : (
+    <div
+      className={`schedule-grid-wrap${fitMonth ? ' schedule-grid-wrap--fit-month' : ''}`}
+      style={fitMonth ? { '--month-days': dates.length } : undefined}
+    >
+      <table className={`schedule-grid${fitMonth ? ' schedule-grid--fit-month' : ''}`}>
+        <thead>
+          <tr>
+            <th className="schedule-grid-sticky schedule-grid-name-col">Karyawan</th>
+            {dates.map((d) => (
+              <th
+                key={d.date}
+                className={`schedule-grid-date-col${d.isWeekend ? ' schedule-grid-weekend' : ''}`}
+                title={d.date}
+              >
+                <span className="schedule-grid-day">{d.day}</span>
+                <span className="schedule-grid-dow">{d.dowLabel}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <td className="schedule-grid-sticky schedule-grid-name-col">
+                <div className="schedule-grid-employee">
+                  <strong>{row.name}</strong>
+                  {row.subtitle && <span className="text-muted">{row.subtitle}</span>}
+                </div>
+              </td>
+              {dates.map((d) => {
+                const item = cellMap.get(`${row.id}::${d.date}`);
+                const label = scheduleCellLabel(item);
+                const clickable = writable && onCellClick;
+                return (
+                  <td
+                    key={d.date}
+                    className={[
+                      'schedule-grid-cell',
+                      d.isWeekend ? 'schedule-grid-weekend' : '',
+                      item ? 'schedule-grid-filled' : '',
+                      clickable ? 'schedule-grid-clickable' : '',
+                    ].filter(Boolean).join(' ')}
+                    title={cellTitle(item)}
+                    onClick={clickable ? () => onCellClick(row, item, d.date) : undefined}
+                  >
+                    {label || <span className="schedule-grid-empty">-</span>}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const legendBlock = legend.length > 0 && (
+    <div className="schedule-legend">
+      <h4 className="schedule-legend-title">Legenda Shift</h4>
+      <div className="schedule-legend-items">
+        {legend.map((shift) => (
+          <div key={shift.code} className="schedule-legend-item">
+            <span className="schedule-legend-code">{shift.code}</span>
+            <span className="schedule-legend-detail">
+              {shift.name}
+              <span className="text-muted"> · {formatTimeRange(shift.start, shift.end)}</span>
+            </span>
+          </div>
+        ))}
+        <div className="schedule-legend-item">
+          <span className="schedule-legend-code">OFF</span>
+          <span className="schedule-legend-detail">Libur</span>
+        </div>
+        <div className="schedule-legend-item">
+          <span className="schedule-legend-code">CT</span>
+          <span className="schedule-legend-detail">Cuti</span>
+        </div>
+        <div className="schedule-legend-item">
+          <span className="schedule-legend-code">LN</span>
+          <span className="schedule-legend-detail">Libur Nasional</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (fitMonth) {
+    return (
+      <div className="schedule-grid-layout">
+        <div className="schedule-table-toolbar">
+          <div className="schedule-toolbar-left">
+            {toolbarExtra}
+            <div className="month-nav">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => onMonthChange(shiftMonth(month, -1))}
+                aria-label="Bulan sebelumnya"
+              >
+                &larr;
+              </button>
+              <span className="month-nav-label">{bounds.label}</span>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => onMonthChange(shiftMonth(month, 1))}
+                aria-label="Bulan berikutnya"
+              >
+                &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+        {gridContent}
+        {legendBlock}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -104,94 +230,8 @@ export default function WorkScheduleGrid({
         </div>
       </div>
 
-      {loading ? (
-        <div className="loading">Memuat jadwal...</div>
-      ) : rows.length === 0 ? (
-        <div className="empty-state">
-          <p>{emptyMessage || `Belum ada jadwal untuk ${bounds.label}.`}</p>
-        </div>
-      ) : (
-        <div className="schedule-grid-wrap">
-          <table className="schedule-grid">
-            <thead>
-              <tr>
-                <th className="schedule-grid-sticky schedule-grid-name-col">Karyawan</th>
-                {dates.map((d) => (
-                  <th
-                    key={d.date}
-                    className={`schedule-grid-date-col${d.isWeekend ? ' schedule-grid-weekend' : ''}`}
-                    title={d.date}
-                  >
-                    <span className="schedule-grid-day">{d.day}</span>
-                    <span className="schedule-grid-dow">{d.dowLabel}</span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td className="schedule-grid-sticky schedule-grid-name-col">
-                    <div className="schedule-grid-employee">
-                      <strong>{row.name}</strong>
-                      {row.subtitle && <span className="text-muted">{row.subtitle}</span>}
-                    </div>
-                  </td>
-                  {dates.map((d) => {
-                    const item = cellMap.get(`${row.id}::${d.date}`);
-                    const label = scheduleCellLabel(item);
-                    const clickable = writable && onCellClick;
-                    return (
-                      <td
-                        key={d.date}
-                        className={[
-                          'schedule-grid-cell',
-                          d.isWeekend ? 'schedule-grid-weekend' : '',
-                          item ? 'schedule-grid-filled' : '',
-                          clickable ? 'schedule-grid-clickable' : '',
-                        ].filter(Boolean).join(' ')}
-                        title={cellTitle(item)}
-                        onClick={clickable ? () => onCellClick(row, item, d.date) : undefined}
-                      >
-                        {label || <span className="schedule-grid-empty">-</span>}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {legend.length > 0 && (
-        <div className="schedule-legend">
-          <h4 className="schedule-legend-title">Legenda Shift</h4>
-          <div className="schedule-legend-items">
-            {legend.map((shift) => (
-              <div key={shift.code} className="schedule-legend-item">
-                <span className="schedule-legend-code">{shift.code}</span>
-                <span className="schedule-legend-detail">
-                  {shift.name}
-                  <span className="text-muted"> · {formatTimeRange(shift.start, shift.end)}</span>
-                </span>
-              </div>
-            ))}
-            <div className="schedule-legend-item">
-              <span className="schedule-legend-code">OFF</span>
-              <span className="schedule-legend-detail">Libur</span>
-            </div>
-            <div className="schedule-legend-item">
-              <span className="schedule-legend-code">CT</span>
-              <span className="schedule-legend-detail">Cuti</span>
-            </div>
-            <div className="schedule-legend-item">
-              <span className="schedule-legend-code">LN</span>
-              <span className="schedule-legend-detail">Libur Nasional</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {gridContent}
+      {legendBlock}
     </>
   );
 }
