@@ -13,13 +13,23 @@ function headers() {
 
 async function request(url, options = {}) {
   const res = await fetch(url, { ...options, headers: { ...headers(), ...options.headers } });
-  const json = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let json = {};
+  if (text) {
+    try {
+      json = JSON.parse(text);
+    } catch {
+      if (!res.ok) {
+        throw new Error(`Permintaan gagal (${res.status}) — endpoint tidak tersedia atau server perlu di-restart`);
+      }
+    }
+  }
   if (res.status === 401) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     if (!url.includes('/auth/login')) window.location.href = '/login';
   }
-  if (!res.ok) throw new Error(json.error || 'Terjadi kesalahan');
+  if (!res.ok) throw new Error(json.error || `Terjadi kesalahan (${res.status})`);
   return json;
 }
 

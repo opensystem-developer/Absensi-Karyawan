@@ -39,7 +39,13 @@ app.use('/api/branches', requirePermission('master:read', 'master:write', 'org:r
 app.use('/api/departments', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), departmentsRouter);
 app.use('/api/positions', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), positionsRouter);
 app.use('/api/employment-statuses', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), employmentStatusesRouter);
-app.use('/api/display-colors', requirePermission('karyawan:read', 'karyawan:write', 'master:write', '*'), displayColorsRouter);
+app.use(
+  '/api/display-colors',
+  requirePermission(
+    'karyawan:read', 'karyawan:write', 'master:read', 'master:write', 'org:read', 'org:write', '*',
+  ),
+  displayColorsRouter,
+);
 app.use('/api/shifts', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), shiftsRouter);
 app.use('/api/work-schedules', requirePermission('karyawan:read', 'karyawan:write', 'org:read', 'org:write', '*'), workSchedulesGlobalRouter);
 app.use('/api/attendances', requirePermission('karyawan:read', 'karyawan:write', 'org:read', 'org:write', '*'), attendancesGlobalRouter);

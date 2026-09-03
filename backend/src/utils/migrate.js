@@ -143,6 +143,8 @@ export function runMigrations(db) {
       );
     `);
   }
+  addColumn(db, 'display_color_settings', 'updated_by', 'VARCHAR(100)');
+  addColumn(db, 'display_color_settings', 'updated_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
 
   seedDisplayColorSettings(db);
   ensureShiftDefaultColors(db);

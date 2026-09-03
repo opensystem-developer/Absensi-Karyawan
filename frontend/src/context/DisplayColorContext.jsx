@@ -9,13 +9,18 @@ export function DisplayColorProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const data = await displayColorsApi.get();
-    setConfig(data);
-    return data;
+    try {
+      const data = await displayColorsApi.get();
+      setConfig(data);
+      return data;
+    } catch (err) {
+      console.error('Gagal memuat pengaturan warna:', err);
+      throw err;
+    }
   }, []);
 
   useEffect(() => {
-    refresh().catch(() => setConfig(null)).finally(() => setLoading(false));
+    refresh().catch(() => {}).finally(() => setLoading(false));
   }, [refresh]);
 
   const shiftsByCode = useMemo(() => {

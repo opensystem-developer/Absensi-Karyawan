@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { displayColorsApi } from '../api';
+import { useState, useEffect, useRef } from 'react';
+import { displayColorsApi, shiftsApi } from '../api';
 import { useDisplayColors } from '../context/DisplayColorContext';
 import { deriveCellColors } from '../utils/colorUtils';
 import { enrichShiftColorFields } from '../utils/shiftColors';
@@ -41,21 +41,72 @@ function ColorRow({ title, code, colors, onChange }) {
   );
 }
 
+function applyConfigToState(data) {
+  return {
+    scheduleStatus: { ...data.scheduleStatus },
+    attendanceStatus: { ...data.attendanceStatus },
+    shifts: (data.shifts || []).map((s) => enrichShiftColorFields({ ...s })),
+  };
+}
+
 export default function DisplayColorSettingsModal({ open, onClose, writable = true }) {
   const { config, refresh } = useDisplayColors();
+  const configRef = useRef(config);
+  configRef.current = config;
   const [scheduleStatus, setScheduleStatus] = useState({});
   const [attendanceStatus, setAttendanceStatus] = useState({});
   const [shifts, setShifts] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!open || !config) return;
-    setScheduleStatus({ ...config.scheduleStatus });
-    setAttendanceStatus({ ...config.attendanceStatus });
-    setShifts((config.shifts || []).map((s) => enrichShiftColorFields({ ...s })));
-    setError('');
-  }, [open, config]);
+    if (!open) return;
+
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError('');
+      try {
+        let data = await refresh();
+        if (!data?.shifts?.length) {
+          try {
+            const shiftRows = await shiftsApi.list();
+            if (shiftRows?.length) {
+              data = {
+                ...data,
+                shifts: shiftRows.map((s) => enrichShiftColorFields({ ...s })),
+              };
+            }
+          } catch {
+            /* shifts list optional fallback */
+          }
+        }
+        if (!cancelled && data) {
+          const state = applyConfigToState(data);
+          setScheduleStatus(state.scheduleStatus);
+          setAttendanceStatus(state.attendanceStatus);
+          setShifts(state.shifts);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          if (configRef.current) {
+            const state = applyConfigToState(configRef.current);
+            setScheduleStatus(state.scheduleStatus);
+            setAttendanceStatus(state.attendanceStatus);
+            setShifts(state.shifts);
+          }
+          setError(err.message);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, [open, refresh]);
 
   async function handleSave() {
     setSaving(true);
@@ -81,7 +132,7 @@ export default function DisplayColorSettingsModal({ open, onClose, writable = tr
           color_bg: s.color_bg,
           color_fg: s.color_fg,
           color_border: s.color_border || s.color_bg,
-        })).filter((s) => s.color_bg),
+        })).filter((s) => s.id && s.color_bg),
       };
       await displayColorsApi.update(payload);
       await refresh();
@@ -104,68 +155,74 @@ export default function DisplayColorSettingsModal({ open, onClose, writable = tr
         </div>
         <div className="modal-body modal-body-scroll">
           {error && <div className="error-banner">{error}</div>}
-          <p className="text-muted" style={{ marginBottom: '1rem' }}>
-            Klik kotak warna untuk memilih. Teks dan border disesuaikan otomatis.
-          </p>
+          {loading ? (
+            <div className="loading">Memuat pengaturan warna...</div>
+          ) : (
+            <>
+              <p className="text-muted" style={{ marginBottom: '1rem' }}>
+                Klik kotak warna untuk memilih. Teks dan border disesuaikan otomatis.
+              </p>
 
-          <section className="color-settings-section">
-            <h3>Status Jadwal Kerja</h3>
-            {SCHEDULE_KEYS.map((row) => (
-              <ColorRow
-                key={row.status}
-                title={row.label}
-                code={row.cellCode}
-                colors={scheduleStatus[row.status] || {}}
-                onChange={(c) => setScheduleStatus((prev) => ({ ...prev, [row.status]: c }))}
-              />
-            ))}
-          </section>
+              <section className="color-settings-section">
+                <h3>Status Jadwal Kerja</h3>
+                {SCHEDULE_KEYS.map((row) => (
+                  <ColorRow
+                    key={row.status}
+                    title={row.label}
+                    code={row.cellCode}
+                    colors={scheduleStatus[row.status] || {}}
+                    onChange={(c) => setScheduleStatus((prev) => ({ ...prev, [row.status]: c }))}
+                  />
+                ))}
+              </section>
 
-          <section className="color-settings-section">
-            <h3>Status Kehadiran</h3>
-            {ATTENDANCE_KEYS.map((row) => (
-              <ColorRow
-                key={row.status}
-                title={row.label}
-                code={row.cellCode}
-                colors={attendanceStatus[row.status] || {}}
-                onChange={(c) => setAttendanceStatus((prev) => ({ ...prev, [row.status]: c }))}
-              />
-            ))}
-          </section>
+              <section className="color-settings-section">
+                <h3>Status Kehadiran</h3>
+                {ATTENDANCE_KEYS.map((row) => (
+                  <ColorRow
+                    key={row.status}
+                    title={row.label}
+                    code={row.cellCode}
+                    colors={attendanceStatus[row.status] || {}}
+                    onChange={(c) => setAttendanceStatus((prev) => ({ ...prev, [row.status]: c }))}
+                  />
+                ))}
+              </section>
 
-          <section className="color-settings-section">
-            <h3>Warna per Shift</h3>
-            {shifts.length === 0 ? (
-              <p className="text-muted">Belum ada data shift.</p>
-            ) : (
-              shifts.map((shift, idx) => (
-                <ColorRow
-                  key={shift.id}
-                  title={`${shift.name} (${shift.code})`}
-                  code={shift.code}
-                  colors={{
-                    bg: shift.color_bg,
-                    fg: shift.color_fg,
-                    border: shift.color_border,
-                  }}
-                  onChange={(c) => {
-                    setShifts((prev) => prev.map((s, i) => i === idx ? {
-                      ...s,
-                      color_bg: c.bg,
-                      color_fg: c.fg,
-                      color_border: c.border,
-                    } : s));
-                  }}
-                />
-              ))
-            )}
-          </section>
+              <section className="color-settings-section">
+                <h3>Warna per Shift</h3>
+                {shifts.length === 0 ? (
+                  <p className="text-muted">Belum ada data shift.</p>
+                ) : (
+                  shifts.map((shift, idx) => (
+                    <ColorRow
+                      key={shift.id}
+                      title={`${shift.name} (${shift.code})`}
+                      code={shift.code}
+                      colors={{
+                        bg: shift.color_bg,
+                        fg: shift.color_fg,
+                        border: shift.color_border,
+                      }}
+                      onChange={(c) => {
+                        setShifts((prev) => prev.map((s, i) => i === idx ? {
+                          ...s,
+                          color_bg: c.bg,
+                          color_fg: c.fg,
+                          color_border: c.border,
+                        } : s));
+                      }}
+                    />
+                  ))
+                )}
+              </section>
+            </>
+          )}
         </div>
         <div className="modal-footer modal-footer-sticky">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Tutup</button>
           {writable && (
-            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
+            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving || loading}>
               {saving ? 'Menyimpan...' : 'Simpan Warna'}
             </button>
           )}
