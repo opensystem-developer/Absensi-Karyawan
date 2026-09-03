@@ -1,6 +1,4 @@
-export const EMPTY_FORM = {
-  branch_id: '',
-  employee_no: '',
+export const EMPTY_KARYAWAN_FORM = {
   nik: '',
   nama_lengkap: '',
   nama_panggilan: '',
@@ -14,12 +12,19 @@ export const EMPTY_FORM = {
   npwp: '',
   no_bpjs_kesehatan: '',
   no_bpjs_tk: '',
+};
+
+export const EMPTY_PEKERJAAN_FORM = {
+  branch_id: '',
+  employee_no: '',
   tanggal_masuk: '',
   tanggal_keluar: '',
   status_karyawan: 'Aktif',
   alasan_keluar: '',
   keterangan: '',
 };
+
+export const EMPTY_FORM = { ...EMPTY_KARYAWAN_FORM, ...EMPTY_PEKERJAAN_FORM };
 
 export const STATUS_OPTIONS = ['Aktif', 'Nonaktif', 'Resign', 'PHK'];
 export const AGAMA_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
@@ -29,17 +34,38 @@ import { formatDate, formatDateTime, toInputDate, formatMaybeDate } from './util
 
 export { formatDate, formatDateTime, toInputDate, formatMaybeDate };
 
-export function toFormData(karyawan) {
-  if (!karyawan) return { ...EMPTY_FORM };
-  const data = { ...EMPTY_FORM };
-  for (const key of Object.keys(EMPTY_FORM)) {
-    data[key] = karyawan[key] ?? EMPTY_FORM[key];
+export function toKaryawanFormData(karyawan) {
+  if (!karyawan) return { ...EMPTY_KARYAWAN_FORM };
+  const data = { ...EMPTY_KARYAWAN_FORM };
+  for (const key of Object.keys(EMPTY_KARYAWAN_FORM)) {
+    data[key] = karyawan[key] ?? EMPTY_KARYAWAN_FORM[key];
   }
   data.tanggal_lahir = toInputDate(karyawan.tanggal_lahir);
+  return data;
+}
+
+export function toPekerjaanFormData(karyawan) {
+  if (!karyawan) return { ...EMPTY_PEKERJAAN_FORM };
+  const data = { ...EMPTY_PEKERJAAN_FORM };
+  for (const key of Object.keys(EMPTY_PEKERJAAN_FORM)) {
+    data[key] = karyawan[key] ?? EMPTY_PEKERJAAN_FORM[key];
+  }
   data.tanggal_masuk = toInputDate(karyawan.tanggal_masuk);
   data.tanggal_keluar = toInputDate(karyawan.tanggal_keluar);
   data.branch_id = karyawan.branch_id ?? '';
   return data;
+}
+
+export function toFormData(karyawan) {
+  return { ...toKaryawanFormData(karyawan), ...toPekerjaanFormData(karyawan) };
+}
+
+export function isDraftEmployeeNo(employeeNo) {
+  return !employeeNo || String(employeeNo).startsWith('DRAFT/');
+}
+
+export function displayEmployeeNo(employeeNo) {
+  return isDraftEmployeeNo(employeeNo) ? 'Belum ditetapkan' : employeeNo;
 }
 
 export function badgeClass(status) {

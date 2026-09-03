@@ -19,16 +19,30 @@ import { generateEmployeeNo } from '../utils/employeeNo.js';
 
 const router = Router();
 
-const FIELDS = [
-  'branch_id', 'employee_no', 'nik', 'nama_lengkap', 'nama_panggilan', 'jenis_kelamin',
+const PERSONAL_FIELDS = [
+  'nik', 'nama_lengkap', 'nama_panggilan', 'jenis_kelamin',
   'tempat_lahir', 'tanggal_lahir', 'agama', 'status_pernikahan', 'jumlah_anak',
-  'no_kk', 'npwp', 'no_bpjs_kesehatan', 'no_bpjs_tk', 'tanggal_masuk',
-  'tanggal_keluar', 'status_karyawan', 'alasan_keluar', 'keterangan',
+  'no_kk', 'npwp', 'no_bpjs_kesehatan', 'no_bpjs_tk',
 ];
 
-function pickFields(body) {
+const PEKERJAAN_FIELDS = [
+  'branch_id', 'employee_no', 'tanggal_masuk', 'tanggal_keluar',
+  'status_karyawan', 'alasan_keluar', 'keterangan',
+];
+
+const FIELDS = [...PERSONAL_FIELDS, ...PEKERJAAN_FIELDS];
+
+function isDraftEmployeeNo(no) {
+  return !no || String(no).startsWith('DRAFT/');
+}
+
+function generateDraftEmployeeNo(nik) {
+  return `DRAFT/${nik}/${Date.now()}`;
+}
+
+function pickFields(body, fieldList) {
   const data = {};
-  for (const field of FIELDS) {
+  for (const field of fieldList) {
     if (body[field] !== undefined) {
       data[field] = body[field] === '' ? null : body[field];
     }
@@ -110,17 +124,13 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const userId = getUserId(req);
-    assertMasterDataReady(db);
-
-    let data = pickFields(req.body);
-    if (!data.branch_id) {
-      return res.status(400).json({ error: 'Cabang wajib dipilih sebelum menambah karyawan' });
-    }
+    let data = pickFields(req.body, PERSONAL_FIELDS);
     if (!data.nik || !data.nama_lengkap) {
       return res.status(400).json({ error: 'nik dan nama_lengkap wajib diisi' });
     }
 
-    data.employee_no = generateEmployeeNo(db, data.branch_id, data.tanggal_masuk || null);
+    data.employee_no = generateDraftEmployeeNo(data.nik);
+    data.status_karyawan = 'Aktif';
 
     data = withAuditOnCreate(data, userId);
     const cols = Object.keys(data);
@@ -144,19 +154,54 @@ router.post('/', (req, res) => {
   }
 });
 
+router.put('/:id/pekerjaan', (req, res) => {
+  try {
+    const userId = getUserId(req);
+    assertMasterDataReady(db);
+
+    const existing = db.prepare(`SELECT * FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
+
+    let data = pickFields(req.body, PEKERJAAN_FIELDS);
+    if (!isDraftEmployeeNo(existing.employee_no)) {
+      delete data.branch_id;
+      delete data.employee_no;
+    } else if (!data.branch_id) {
+      return res.status(400).json({ error: 'Cabang wajib dipilih untuk menetapkan pekerjaan karyawan' });
+    }
+
+    if (isDraftEmployeeNo(existing.employee_no) && data.branch_id) {
+      data.employee_no = generateEmployeeNo(db, data.branch_id, data.tanggal_masuk || null);
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Tidak ada data untuk diperbarui' });
+    }
+
+    data = withAuditOnUpdate(data, userId);
+    const sets = Object.keys(data).map((k) => `${k} = ?`).join(', ');
+    db.prepare(`UPDATE karyawan SET ${sets} WHERE id = ?`).run(...Object.values(data), req.params.id);
+
+    const updated = db.prepare('SELECT * FROM karyawan WHERE id = ?').get(req.params.id);
+    const changes = diffRecords(existing, updated, PEKERJAAN_FIELDS);
+    logDataChanges({ tableName: 'karyawan', recordId: updated.id, employeeId: updated.id, action: 'UPDATE', changes, changedBy: userId });
+    logActivity({ userId: req.user?.id, username: userId, action: 'UPDATE', module: 'karyawan_pekerjaan', entityId: updated.id, description: `Ubah pekerjaan karyawan ${updated.nama_lengkap}`, ip: req.ip });
+    res.json(updated);
+  } catch (err) {
+    handleDbError(err, res);
+  }
+});
+
 router.put('/:id', (req, res) => {
   try {
     const userId = getUserId(req);
     const existing = db.prepare(`SELECT * FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
 
-    let data = pickFields(req.body);
+    let data = pickFields(req.body, PERSONAL_FIELDS);
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'Tidak ada data untuk diperbarui' });
     }
-
-    delete data.employee_no;
-    delete data.branch_id;
 
     data = withAuditOnUpdate(data, userId);
     const sets = Object.keys(data).map((k) => `${k} = ?`).join(', ');
@@ -165,7 +210,7 @@ router.put('/:id', (req, res) => {
       req.params.id
     );
     const updated = db.prepare('SELECT * FROM karyawan WHERE id = ?').get(req.params.id);
-    const changes = diffRecords(existing, updated, FIELDS);
+    const changes = diffRecords(existing, updated, PERSONAL_FIELDS);
     logDataChanges({ tableName: 'karyawan', recordId: updated.id, employeeId: updated.id, action: 'UPDATE', changes, changedBy: userId });
     logActivity({ userId: req.user?.id, username: userId, action: 'UPDATE', module: 'karyawan', entityId: updated.id, description: `Ubah karyawan ${updated.nama_lengkap}`, ip: req.ip });
     res.json(updated);

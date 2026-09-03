@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 const MENU = [
   { to: '/', label: 'Dashboard', icon: '📊' },
   { to: '/karyawan', label: 'Karyawan', icon: '👥', perm: 'karyawan:read' },
+  { to: '/pekerjaan-karyawan', label: 'Pekerjaan Karyawan', icon: '💼', perm: 'karyawan:read' },
   { section: 'Master Data' },
   { to: '/perusahaan', label: 'Perusahaan', icon: '🏢', perm: 'master:read' },
   { to: '/cabang', label: 'Cabang', icon: '🏪', perm: 'org:read' },

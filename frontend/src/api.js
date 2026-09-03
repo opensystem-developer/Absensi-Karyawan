@@ -103,6 +103,10 @@ export const fetchKaryawan = (params = {}) => {
 export const createKaryawan = karyawanApi.create;
 export const updateKaryawan = karyawanApi.update;
 export const deleteKaryawan = karyawanApi.delete;
+
+export async function updatePekerjaan(id, data) {
+  return request(`${API}/karyawan/${id}/pekerjaan`, { method: 'PUT', body: JSON.stringify(data) });
+}
 export const fetchAlamat = alamatApi.list;
 export const createAlamat = alamatApi.create;
 export const updateAlamat = alamatApi.update;

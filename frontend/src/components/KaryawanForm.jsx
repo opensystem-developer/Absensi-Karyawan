@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { EMPTY_FORM, AGAMA_OPTIONS, STATUS_NIKAH_OPTIONS, STATUS_OPTIONS } from '../constants';
-import { branchesApi, previewEmployeeNo } from '../api';
+import { EMPTY_KARYAWAN_FORM, AGAMA_OPTIONS, STATUS_NIKAH_OPTIONS } from '../constants';
 import DateInput from './DateInput';
 
 function Field({ label, required, children }) {
@@ -15,65 +14,12 @@ function Field({ label, required, children }) {
   );
 }
 
-export function KaryawanFormFields({ form, onChange, isEdit, readOnly = false }) {
-  const [branches, setBranches] = useState([]);
-  const [previewNo, setPreviewNo] = useState('');
-  const [previewLoading, setPreviewLoading] = useState(false);
-
-  useEffect(() => {
-    branchesApi.list().then(setBranches).catch(() => setBranches([]));
-  }, []);
-
-  useEffect(() => {
-    if (isEdit) {
-      setPreviewNo(form.employee_no || '');
-      return;
-    }
-    if (!form.branch_id) {
-      setPreviewNo('');
-      return;
-    }
-    setPreviewLoading(true);
-    previewEmployeeNo(form.branch_id, form.tanggal_masuk || '')
-      .then((res) => setPreviewNo(res.employee_no))
-      .catch(() => setPreviewNo(''))
-      .finally(() => setPreviewLoading(false));
-  }, [form.branch_id, form.tanggal_masuk, form.employee_no, isEdit]);
-
+export function KaryawanFormFields({ form, onChange, readOnly = false }) {
   const set = (field) => (e) => onChange({ ...form, [field]: e.target.value });
 
   return (
     <fieldset disabled={readOnly} className="form-fieldset">
-    <div className="form-grid">
-        <div className="form-section-title">Penempatan & Nomor Karyawan</div>
-
-        <Field label="Cabang" required={!isEdit}>
-          {isEdit ? (
-            <input value={branches.find((b) => b.id === form.branch_id)?.name || form.branch_id || '-'} readOnly disabled />
-          ) : (
-            <select value={form.branch_id} onChange={set('branch_id')} required>
-              <option value="">Pilih cabang terlebih dahulu</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
-              ))}
-            </select>
-          )}
-        </Field>
-
-        <Field label="Nomor Karyawan" required>
-          <input
-            value={previewLoading ? 'Menghasilkan...' : (previewNo || '')}
-            readOnly
-            disabled
-            placeholder={form.branch_id ? 'Otomatis: 00001/KODE/BLN/YY' : 'Pilih cabang dulu'}
-          />
-        </Field>
-        {!isEdit && form.branch_id && (
-          <div className="form-group full-width">
-            <p className="form-hint">Format: <strong>99999/KODE_CABANG/BULAN/TAHUN</strong> (nomor urut digenerate otomatis)</p>
-          </div>
-        )}
-
+      <div className="form-grid">
         <div className="form-section-title">Data Identitas</div>
 
         <Field label="NIK KTP" required>
@@ -128,41 +74,20 @@ export function KaryawanFormFields({ form, onChange, isEdit, readOnly = false })
         <Field label="BPJS Ketenagakerjaan">
           <input value={form.no_bpjs_tk} onChange={set('no_bpjs_tk')} />
         </Field>
-
-        <div className="form-section-title">Kepegawaian</div>
-
-        <Field label="Tanggal Masuk">
-          <DateInput value={form.tanggal_masuk} onChange={set('tanggal_masuk')} />
-        </Field>
-        <Field label="Tanggal Keluar">
-          <DateInput value={form.tanggal_keluar} onChange={set('tanggal_keluar')} />
-        </Field>
-        <Field label="Status Karyawan">
-          <select value={form.status_karyawan} onChange={set('status_karyawan')}>
-            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </Field>
-        <Field label="Alasan Keluar">
-          <input value={form.alasan_keluar} onChange={set('alasan_keluar')} />
-        </Field>
-        <div className="form-group full-width">
-          <label>Keterangan</label>
-          <textarea rows={3} value={form.keterangan} onChange={set('keterangan')} />
-        </div>
-    </div>
+      </div>
     </fieldset>
   );
 }
 
-export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error, saving, isEdit }) {
+export default function KaryawanForm({ form, onChange, onSubmit, onCancel, error, saving }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
       {error && <div className="error-banner">{error}</div>}
-      <KaryawanFormFields form={form} onChange={onChange} isEdit={isEdit} />
+      <KaryawanFormFields form={form} onChange={onChange} />
       <div className="modal-footer" style={{ padding: '1rem 0 0', border: 'none' }}>
         <button type="button" className="btn btn-secondary" onClick={onCancel}>Batal</button>
-        <button type="submit" className="btn btn-primary" disabled={saving || (!isEdit && !form.branch_id)}>
-          {saving ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah Karyawan'}
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          {saving ? 'Menyimpan...' : 'Simpan'}
         </button>
       </div>
     </form>

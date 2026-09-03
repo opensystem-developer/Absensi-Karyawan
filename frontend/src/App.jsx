@@ -5,6 +5,7 @@ import PanelLayout from './layout/PanelLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import KaryawanPage from './pages/KaryawanPage';
+import PekerjaanKaryawanPage from './pages/PekerjaanKaryawanPage';
 import CompaniesPage from './pages/master/CompaniesPage';
 import BranchesPage from './pages/master/BranchesPage';
 import DepartmentsPage from './pages/master/DepartmentsPage';
@@ -25,6 +26,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute><PanelLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="karyawan" element={<ProtectedRoute permission="karyawan:read"><KaryawanPage /></ProtectedRoute>} />
+        <Route path="pekerjaan-karyawan" element={<ProtectedRoute permission="karyawan:read"><PekerjaanKaryawanPage /></ProtectedRoute>} />
         <Route path="perusahaan" element={<ProtectedRoute permission="master:read"><CompaniesPage /></ProtectedRoute>} />
         <Route path="cabang" element={<ProtectedRoute permission="org:read"><BranchesPage /></ProtectedRoute>} />
         <Route path="departemen" element={<ProtectedRoute permission="org:read"><DepartmentsPage /></ProtectedRoute>} />
