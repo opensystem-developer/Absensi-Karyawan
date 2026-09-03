@@ -27,6 +27,7 @@ export function buildMonthDates(ym) {
       day,
       dow,
       dowLabel: dowLabels[dow],
+      isSunday: dow === 0,
       isWeekend: dow === 0 || dow === 6,
     });
   }

@@ -111,7 +111,7 @@ export default function WorkScheduleGrid({
             {dates.map((d) => (
               <th
                 key={d.date}
-                className={`schedule-grid-date-col${d.isWeekend ? ' schedule-grid-weekend' : ''}`}
+                className={`schedule-grid-date-col${d.isSunday ? ' schedule-grid-sunday' : ''}`}
                 title={d.date}
               >
                 <span className="schedule-grid-day">{d.day}</span>
@@ -138,7 +138,7 @@ export default function WorkScheduleGrid({
                     key={d.date}
                     className={[
                       display.className,
-                      d.isWeekend ? 'schedule-grid-weekend' : '',
+                      d.isSunday ? 'schedule-grid-sunday' : '',
                       clickable ? 'schedule-grid-clickable' : '',
                     ].filter(Boolean).join(' ')}
                     style={display.style}

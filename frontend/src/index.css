@@ -681,8 +681,24 @@ tr:hover td {
   font-weight: 500;
 }
 
-.schedule-grid-weekend {
-  background: #f8fafc;
+.schedule-grid-sunday {
+  background-image: linear-gradient(rgba(254, 202, 202, 0.28), rgba(254, 202, 202, 0.28));
+}
+
+.schedule-grid thead th.schedule-grid-sunday {
+  background: #fecaca;
+  background-image: none;
+  color: #991b1b;
+}
+
+.schedule-grid thead th.schedule-grid-sunday .schedule-grid-dow {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.schedule-grid td.schedule-grid-sunday:has(.schedule-grid-empty) {
+  background-color: #fef2f2;
+  background-image: none;
 }
 
 .schedule-grid-cell {

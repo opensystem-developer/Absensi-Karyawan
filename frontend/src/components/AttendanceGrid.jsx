@@ -60,7 +60,7 @@ export default function AttendanceGrid({
             {dates.map((d) => (
               <th
                 key={d.date}
-                className={`schedule-grid-date-col${d.isWeekend ? ' schedule-grid-weekend' : ''}`}
+                className={`schedule-grid-date-col${d.isSunday ? ' schedule-grid-sunday' : ''}`}
                 title={d.date}
               >
                 <span className="schedule-grid-day">{d.day}</span>
@@ -84,7 +84,7 @@ export default function AttendanceGrid({
                 return (
                   <td
                     key={d.date}
-                    className={[display.className, d.isWeekend ? 'schedule-grid-weekend' : ''].filter(Boolean).join(' ')}
+                    className={[display.className, d.isSunday ? 'schedule-grid-sunday' : ''].filter(Boolean).join(' ')}
                     style={display.style}
                     title={attendanceCellTitle(item, formatDateTime)}
                   >
