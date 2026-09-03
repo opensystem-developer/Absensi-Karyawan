@@ -8,6 +8,7 @@ import {
   legendColorForShift,
   legendColorForStatusCode,
 } from '../utils/scheduleCellDisplay';
+import { ScheduleGridEmployeeHeader, ScheduleGridEmployeeCells } from './ScheduleGridEmployeeCells';
 
 export { scheduleCellLabel, buildScheduleCellMap } from '../utils/scheduleCellDisplay';
 
@@ -107,7 +108,7 @@ export default function WorkScheduleGrid({
       <table className={`schedule-grid${fitMonth ? ' schedule-grid--fit-month' : ''}`}>
         <thead>
           <tr>
-            <th className="schedule-grid-sticky schedule-grid-name-col">Karyawan</th>
+            <ScheduleGridEmployeeHeader />
             {dates.map((d) => (
               <th
                 key={d.date}
@@ -123,24 +124,7 @@ export default function WorkScheduleGrid({
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td className="schedule-grid-sticky schedule-grid-name-col">
-                <div className="schedule-grid-employee">
-                  <strong>{row.name}</strong>
-                  {(row.positionShort || row.subtitle) && (
-                    <span className="schedule-grid-meta text-muted">
-                      {row.positionShort && (
-                        <span className="schedule-grid-position" title={row.positionName || row.positionShort}>
-                          {row.positionShort}
-                        </span>
-                      )}
-                      {row.employeeNo && <span className="schedule-grid-employee-no">{row.employeeNo}</span>}
-                      {!row.positionShort && !row.employeeNo && row.subtitle && (
-                        <span>{row.subtitle}</span>
-                      )}
-                    </span>
-                  )}
-                </div>
-              </td>
+              <ScheduleGridEmployeeCells row={row} />
               {dates.map((d) => {
                 const item = cellMap.get(`${row.id}::${d.date}`);
                 const display = getScheduleCellDisplay(item, config, shiftsByCode);

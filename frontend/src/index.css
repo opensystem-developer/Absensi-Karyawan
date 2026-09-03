@@ -18,7 +18,9 @@
   --border: #e2e8f0;
   --radius: 10px;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --schedule-name-width: 230px;
+  --schedule-name-width: 180px;
+  --schedule-position-width: 76px;
+  --schedule-sticky-width: calc(var(--schedule-name-width) + var(--schedule-position-width));
 }
 
 html,
@@ -658,13 +660,32 @@ tr:hover td {
   padding: 0.5rem 0.75rem !important;
 }
 
+.schedule-grid-position-col {
+  width: var(--schedule-position-width);
+  min-width: var(--schedule-position-width);
+  max-width: var(--schedule-position-width);
+  padding: 0.35rem 0.4rem !important;
+  left: var(--schedule-name-width);
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.schedule-grid-position-code {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
 .schedule-grid-date-col {
   min-width: 2.4rem;
   width: 2.4rem;
 }
 
 .schedule-grid--fit-month .schedule-grid-date-col {
-  width: calc((100% - var(--schedule-name-width)) / var(--month-days, 31));
+  width: calc((100% - var(--schedule-sticky-width)) / var(--month-days, 31));
   min-width: 0;
 }
 
@@ -745,30 +766,14 @@ tr:hover td {
   font-size: 0.7rem;
 }
 
-.schedule-grid-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.35rem;
-  line-height: 1.2;
-}
-
-.schedule-grid-position {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #475569;
-  background: #e2e8f0;
-  padding: 0.05rem 0.35rem;
-  border-radius: 3px;
-  letter-spacing: 0.02em;
-}
-
 .schedule-grid-employee-no {
   font-size: 0.65rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+  display: block;
+  line-height: 1.2;
 }
 
 .schedule-legend {
