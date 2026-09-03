@@ -176,3 +176,5 @@ npm run cf:deploy
 ```
 
 **Status:** Frontend + `/api/health` siap deploy. Porting API penuh ke D1 (async) masih dalam progres — lihat panduan untuk opsi hybrid sementara.
+
+> **Catatan:** Untuk visi ERP multi-modul (`*.goodis.web.id`), gunakan rencana **VPS + PostgreSQL** di [docs/MIGRATION-VPS-POSTGRES.md](docs/MIGRATION-VPS-POSTGRES.md) — bukan Cloudflare D1.
