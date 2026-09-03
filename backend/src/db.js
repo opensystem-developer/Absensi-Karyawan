@@ -109,6 +109,9 @@ db.exec(`
     late_tolerance_minutes INTEGER NOT NULL DEFAULT 0,
     early_out_tolerance_minutes INTEGER NOT NULL DEFAULT 0,
     status INTEGER NOT NULL DEFAULT 1,
+    color_bg VARCHAR(7),
+    color_fg VARCHAR(7),
+    color_border VARCHAR(7),
     ${AUDIT_COLS}
   );
 
@@ -284,6 +287,18 @@ db.exec(`
     new_value TEXT,
     changed_by VARCHAR(100),
     changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS display_color_settings (
+    key VARCHAR(50) PRIMARY KEY,
+    label VARCHAR(100) NOT NULL,
+    group_key VARCHAR(30) NOT NULL,
+    cell_code VARCHAR(10) NOT NULL,
+    bg VARCHAR(7) NOT NULL,
+    fg VARCHAR(7) NOT NULL,
+    border VARCHAR(7),
+    updated_by VARCHAR(100),
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE INDEX IF NOT EXISTS idx_karyawan_status ON karyawan(status_karyawan);

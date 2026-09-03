@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { formatTimeRange } from '../shiftConstants';
 import { buildMonthDates, monthBounds, shiftMonth } from '../utils/scheduleMonth';
+import { useDisplayColors } from '../context/DisplayColorContext';
 import {
   buildScheduleCellMap,
   getScheduleCellDisplay,
@@ -59,15 +60,15 @@ function cellTitle(item) {
   return parts.join(' · ');
 }
 
-function legendSwatchStyle(entry) {
+function legendSwatchStyle(config, entry, shiftsByCode) {
   const colors = entry.kind === 'status'
-    ? legendColorForStatusCode(entry.code)
-    : legendColorForShift(entry);
+    ? legendColorForStatusCode(config, entry.code)
+    : legendColorForShift(config, entry, shiftsByCode);
   if (!colors) return {};
   return {
     backgroundColor: colors.bg,
     color: colors.fg,
-    borderColor: colors.border,
+    borderColor: colors.border || colors.bg,
   };
 }
 
@@ -84,6 +85,7 @@ export default function WorkScheduleGrid({
   emptyMessage,
   fitMonth = false,
 }) {
+  const { config, shiftsByCode } = useDisplayColors();
   const bounds = useMemo(() => monthBounds(month), [month]);
   const dates = useMemo(() => buildMonthDates(month), [month]);
   const cellMap = useMemo(() => buildScheduleCellMap(schedules), [schedules]);
@@ -127,7 +129,7 @@ export default function WorkScheduleGrid({
               </td>
               {dates.map((d) => {
                 const item = cellMap.get(`${row.id}::${d.date}`);
-                const display = getScheduleCellDisplay(item);
+                const display = getScheduleCellDisplay(item, config, shiftsByCode);
                 const clickable = writable && onCellClick;
                 return (
                   <td
@@ -158,7 +160,7 @@ export default function WorkScheduleGrid({
       <div className="schedule-legend-items">
         {legend.map((shift) => (
           <div key={shift.code} className="schedule-legend-item">
-            <span className="schedule-legend-code" style={legendSwatchStyle(shift)}>{shift.code}</span>
+            <span className="schedule-legend-code" style={legendSwatchStyle(config, shift, shiftsByCode)}>{shift.code}</span>
             <span className="schedule-legend-detail">
               {shift.name}
               <span className="text-muted"> · {formatTimeRange(shift.start, shift.end)}</span>
@@ -167,7 +169,7 @@ export default function WorkScheduleGrid({
         ))}
         {STATUS_LEGEND.map((entry) => (
           <div key={entry.code} className="schedule-legend-item">
-            <span className="schedule-legend-code" style={legendSwatchStyle(entry)}>{entry.code}</span>
+            <span className="schedule-legend-code" style={legendSwatchStyle(config, entry, shiftsByCode)}>{entry.code}</span>
             <span className="schedule-legend-detail">{entry.label}</span>
           </div>
         ))}
@@ -182,23 +184,9 @@ export default function WorkScheduleGrid({
           <div className="schedule-toolbar-left">
             {toolbarExtra}
             <div className="month-nav">
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => onMonthChange(shiftMonth(month, -1))}
-                aria-label="Bulan sebelumnya"
-              >
-                &larr;
-              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onMonthChange(shiftMonth(month, -1))} aria-label="Bulan sebelumnya">&larr;</button>
               <span className="month-nav-label">{bounds.label}</span>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => onMonthChange(shiftMonth(month, 1))}
-                aria-label="Bulan berikutnya"
-              >
-                &rarr;
-              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onMonthChange(shiftMonth(month, 1))} aria-label="Bulan berikutnya">&rarr;</button>
             </div>
           </div>
         </div>
@@ -214,27 +202,12 @@ export default function WorkScheduleGrid({
         <div className="schedule-toolbar-left">
           {toolbarExtra}
           <div className="month-nav">
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => onMonthChange(shiftMonth(month, -1))}
-              aria-label="Bulan sebelumnya"
-            >
-              &larr;
-            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onMonthChange(shiftMonth(month, -1))} aria-label="Bulan sebelumnya">&larr;</button>
             <span className="month-nav-label">{bounds.label}</span>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => onMonthChange(shiftMonth(month, 1))}
-              aria-label="Bulan berikutnya"
-            >
-              &rarr;
-            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onMonthChange(shiftMonth(month, 1))} aria-label="Bulan berikutnya">&rarr;</button>
           </div>
         </div>
       </div>
-
       {gridContent}
       {legendBlock}
     </>

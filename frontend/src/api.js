@@ -58,6 +58,10 @@ export const departmentsApi = crud(`${API}/departments`);
 export const positionsApi = crud(`${API}/positions`);
 export const employmentStatusesApi = crud(`${API}/employment-statuses`);
 export const shiftsApi = crud(`${API}/shifts`);
+export const displayColorsApi = {
+  get: () => request(`${API}/display-colors`),
+  update: (data) => request(`${API}/display-colors`, { method: 'PUT', body: JSON.stringify(data) }),
+};
 export const workSchedulesApi = crud(`${API}/work-schedules`);
 export const attendancesApi = crud(`${API}/attendances`);
 export const usersApi = crud(`${API}/users`);

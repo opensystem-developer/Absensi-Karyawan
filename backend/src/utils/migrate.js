@@ -1,3 +1,5 @@
+import { seedDisplayColorSettings } from './displayColors.js';
+
 const AUDIT_COLUMNS = [
   ['created_by', 'VARCHAR(100)'],
   ['updated_by', 'VARCHAR(100)'],
@@ -120,4 +122,26 @@ export function runMigrations(db) {
   } else if (!tableExists(db, 'department_branches')) {
     recreateDepartmentBranches(db);
   }
+
+  addColumn(db, 'shifts', 'color_bg', 'VARCHAR(7)');
+  addColumn(db, 'shifts', 'color_fg', 'VARCHAR(7)');
+  addColumn(db, 'shifts', 'color_border', 'VARCHAR(7)');
+
+  if (!tableExists(db, 'display_color_settings')) {
+    db.exec(`
+      CREATE TABLE display_color_settings (
+        key VARCHAR(50) PRIMARY KEY,
+        label VARCHAR(100) NOT NULL,
+        group_key VARCHAR(30) NOT NULL,
+        cell_code VARCHAR(10) NOT NULL,
+        bg VARCHAR(7) NOT NULL,
+        fg VARCHAR(7) NOT NULL,
+        border VARCHAR(7),
+        updated_by VARCHAR(100),
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  }
+
+  seedDisplayColorSettings(db);
 }

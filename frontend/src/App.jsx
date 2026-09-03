@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { DisplayColorProvider } from './context/DisplayColorContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import PanelLayout from './layout/PanelLayout';
 import LoginPage from './pages/LoginPage';
@@ -23,7 +24,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route element={<ProtectedRoute><PanelLayout /></ProtectedRoute>}>
+      <Route element={<ProtectedRoute><DisplayColorProvider><PanelLayout /></DisplayColorProvider></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="karyawan" element={<ProtectedRoute permission="karyawan:read"><KaryawanPage /></ProtectedRoute>} />
         <Route path="pekerjaan-karyawan" element={<ProtectedRoute permission="karyawan:read"><PekerjaanKaryawanPage /></ProtectedRoute>} />

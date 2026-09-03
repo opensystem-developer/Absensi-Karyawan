@@ -9,6 +9,7 @@ export default createMasterRouter({
   fields: [
     'code', 'name', 'start_time', 'end_time', 'break_start', 'break_end',
     'late_tolerance_minutes', 'early_out_tolerance_minutes', 'status',
+    'color_bg', 'color_fg', 'color_border',
   ],
   required: ['code', 'name', 'start_time', 'end_time'],
   boolFields: ['status'],

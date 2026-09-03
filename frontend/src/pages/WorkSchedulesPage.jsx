@@ -4,6 +4,7 @@ import { formatDate } from '../constants';
 import { EMPTY_WORK_SCHEDULE_FORM, toWorkScheduleFormData } from '../shiftConstants';
 import { WorkScheduleForm } from '../components/ShiftForms';
 import WorkScheduleGrid from '../components/WorkScheduleGrid';
+import DisplayColorSettingsModal from '../components/DisplayColorSettingsModal';
 import { useAuth } from '../context/AuthContext';
 import { currentMonthKey, monthBounds } from '../utils/scheduleMonth';
 
@@ -15,12 +16,14 @@ export default function WorkSchedulesPage() {
   const [employeeFilter, setEmployeeFilter] = useState('');
   const [month, setMonth] = useState(currentMonthKey);
   const [modalOpen, setModalOpen] = useState(false);
+  const [colorModalOpen, setColorModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_WORK_SCHEDULE_FORM, employee_id: '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const { canWrite } = useAuth();
   const writable = canWrite('karyawan');
+  const colorWritable = writable || canWrite('master');
 
   const bounds = useMemo(() => monthBounds(month), [month]);
 
@@ -113,7 +116,12 @@ export default function WorkSchedulesPage() {
           <h1>Jadwal Kerja</h1>
           <p>Grid jadwal kerja per karyawan dan tanggal (format Excel)</p>
         </div>
-        {writable && <button className="btn btn-primary" onClick={() => openCreate()}>+ Tambah Jadwal</button>}
+        <div className="page-header-actions">
+          <button type="button" className="btn btn-secondary" onClick={() => setColorModalOpen(true)}>
+            Pengaturan Warna
+          </button>
+          {writable && <button className="btn btn-primary" onClick={() => openCreate()}>+ Tambah Jadwal</button>}
+        </div>
       </div>
 
       {error && <div className="error-banner page-schedule-error">{error}</div>}
@@ -169,6 +177,12 @@ export default function WorkSchedulesPage() {
           </div>
         </div>
       )}
+
+      <DisplayColorSettingsModal
+        open={colorModalOpen}
+        onClose={() => setColorModalOpen(false)}
+        writable={colorWritable}
+      />
     </div>
   );
 }
