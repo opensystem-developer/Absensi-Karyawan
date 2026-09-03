@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { workSchedulesApi, fetchKaryawan, shiftsApi } from '../api';
+import { workSchedulesApi, fetchKaryawan } from '../api';
 import { formatDate } from '../constants';
 import { EMPTY_WORK_SCHEDULE_FORM, toWorkScheduleFormData } from '../shiftConstants';
 import { WorkScheduleForm } from '../components/ShiftForms';
@@ -11,7 +11,6 @@ import { currentMonthKey, monthBounds } from '../utils/scheduleMonth';
 export default function WorkSchedulesPage() {
   const [items, setItems] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [employeeFilter, setEmployeeFilter] = useState('');
   const [month, setMonth] = useState(currentMonthKey);
@@ -46,7 +45,6 @@ export default function WorkSchedulesPage() {
 
   useEffect(() => {
     fetchKaryawan().then(setEmployees).catch(() => {});
-    shiftsApi.list().then(setShifts).catch(() => {});
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -132,7 +130,6 @@ export default function WorkSchedulesPage() {
           onMonthChange={setMonth}
           rows={rows}
           schedules={items}
-          shifts={shifts}
           loading={loading}
           writable={writable}
           onCellClick={writable ? handleCellClick : undefined}

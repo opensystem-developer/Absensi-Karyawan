@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { displayColorsApi } from '../api';
+import { enrichShiftColorFields } from '../utils/shiftColors';
 
 const DisplayColorContext = createContext(null);
 
@@ -21,7 +22,7 @@ export function DisplayColorProvider({ children }) {
     if (!config?.shifts) return {};
     const map = {};
     for (const s of config.shifts) {
-      if (s.code) map[s.code] = s;
+      if (s.code) map[s.code] = enrichShiftColorFields(s);
     }
     return map;
   }, [config]);

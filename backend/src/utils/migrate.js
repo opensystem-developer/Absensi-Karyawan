@@ -1,4 +1,5 @@
 import { seedDisplayColorSettings } from './displayColors.js';
+import { ensureShiftDefaultColors } from './colorUtils.js';
 
 const AUDIT_COLUMNS = [
   ['created_by', 'VARCHAR(100)'],
@@ -144,4 +145,5 @@ export function runMigrations(db) {
   }
 
   seedDisplayColorSettings(db);
+  ensureShiftDefaultColors(db);
 }

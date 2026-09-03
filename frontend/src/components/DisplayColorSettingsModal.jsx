@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { displayColorsApi } from '../api';
 import { useDisplayColors } from '../context/DisplayColorContext';
 import { deriveCellColors } from '../utils/colorUtils';
+import { enrichShiftColorFields } from '../utils/shiftColors';
 import ExcelColorPicker from './ExcelColorPicker';
 
 const SCHEDULE_KEYS = [
@@ -52,7 +53,7 @@ export default function DisplayColorSettingsModal({ open, onClose, writable = tr
     if (!open || !config) return;
     setScheduleStatus({ ...config.scheduleStatus });
     setAttendanceStatus({ ...config.attendanceStatus });
-    setShifts(config.shifts?.map((s) => ({ ...s })) || []);
+    setShifts((config.shifts || []).map((s) => enrichShiftColorFields({ ...s })));
     setError('');
   }, [open, config]);
 
@@ -79,8 +80,8 @@ export default function DisplayColorSettingsModal({ open, onClose, writable = tr
           id: s.id,
           color_bg: s.color_bg,
           color_fg: s.color_fg,
-          color_border: s.color_border,
-        })),
+          color_border: s.color_border || s.color_bg,
+        })).filter((s) => s.color_bg),
       };
       await displayColorsApi.update(payload);
       await refresh();

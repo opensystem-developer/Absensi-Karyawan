@@ -11,10 +11,10 @@ import {
 
 export { scheduleCellLabel, buildScheduleCellMap } from '../utils/scheduleCellDisplay';
 
-export function buildShiftLegend(shifts, schedules = []) {
+export function buildShiftLegend(configShifts = [], schedules = []) {
   const byCode = new Map();
 
-  for (const shift of shifts) {
+  for (const shift of configShifts) {
     if (shift?.code) {
       byCode.set(shift.code, {
         code: shift.code,
@@ -77,7 +77,6 @@ export default function WorkScheduleGrid({
   onMonthChange,
   rows,
   schedules,
-  shifts = [],
   loading = false,
   writable = false,
   onCellClick,
@@ -89,7 +88,10 @@ export default function WorkScheduleGrid({
   const bounds = useMemo(() => monthBounds(month), [month]);
   const dates = useMemo(() => buildMonthDates(month), [month]);
   const cellMap = useMemo(() => buildScheduleCellMap(schedules), [schedules]);
-  const legend = useMemo(() => buildShiftLegend(shifts, schedules), [shifts, schedules]);
+  const legend = useMemo(
+    () => buildShiftLegend(config?.shifts || [], schedules),
+    [config?.shifts, schedules],
+  );
 
   const gridContent = loading ? (
     <div className="loading">Memuat jadwal...</div>

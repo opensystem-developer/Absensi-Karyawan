@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { defaultShiftColorForCode } from './utils/colorUtils.js';
 
 const ALL_PERMISSIONS = ['*', 'karyawan:read', 'karyawan:write', 'master:read', 'master:write', 'org:read', 'org:write', 'users:read', 'users:write', 'logs:read'];
 
@@ -54,15 +55,14 @@ export function seedDatabase(db) {
     VALUES (?, 'DEV', 'Software Developer', 'Staff', 1, 'system', 'system')
   `).run(deptId);
 
-  db.prepare(`
-    INSERT INTO shifts (code, name, start_time, end_time, break_start, break_end, late_tolerance_minutes, early_out_tolerance_minutes, status, created_by, updated_by)
-    VALUES ('PAGI', 'Shift Pagi', '08:00', '17:00', '12:00', '13:00', 15, 15, 1, 'system', 'system')
-  `).run();
-
-  db.prepare(`
-    INSERT INTO shifts (code, name, start_time, end_time, break_start, break_end, late_tolerance_minutes, early_out_tolerance_minutes, status, created_by, updated_by)
-    VALUES ('SORE', 'Shift Sore', '14:00', '22:00', '18:00', '19:00', 10, 10, 1, 'system', 'system')
-  `).run();
+  const insShift = db.prepare(`
+    INSERT INTO shifts (code, name, start_time, end_time, break_start, break_end, late_tolerance_minutes, early_out_tolerance_minutes, status, color_bg, color_fg, color_border, created_by, updated_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 'system', 'system')
+  `);
+  const pagi = defaultShiftColorForCode('PAGI');
+  insShift.run('PAGI', 'Shift Pagi', '08:00', '17:00', '12:00', '13:00', 15, 15, pagi.bg, pagi.fg, pagi.border);
+  const sore = defaultShiftColorForCode('SORE');
+  insShift.run('SORE', 'Shift Sore', '14:00', '22:00', '18:00', '19:00', 10, 10, sore.bg, sore.fg, sore.border);
 }
 
 export { ALL_PERMISSIONS };

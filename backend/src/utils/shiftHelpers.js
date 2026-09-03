@@ -1,5 +1,6 @@
 import db from '../db.js';
 import { NOT_DELETED } from './audit.js';
+import { enrichShiftColorFields } from './colorUtils.js';
 
 export const WORK_SCHEDULE_STATUSES = ['WORK', 'OFF', 'LEAVE', 'HOLIDAY'];
 export const ATTENDANCE_STATUSES = ['PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'OFF'];
@@ -11,7 +12,7 @@ export function getShift(db, shiftId) {
 
 export function enrichShiftRow(row) {
   if (!row) return row;
-  return { ...row, status: !!row.status };
+  return enrichShiftColorFields({ ...row, status: !!row.status });
 }
 
 export function enrichEmployeeShiftRow(row) {

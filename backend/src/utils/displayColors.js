@@ -1,4 +1,9 @@
 import { NOT_DELETED } from './audit.js';
+import {
+  deriveCellColors,
+  enrichShiftColorFields,
+  ensureShiftDefaultColors,
+} from './colorUtils.js';
 
 export const SCHEDULE_STATUS_DEFS = [
   { key: 'schedule_OFF', status: 'OFF', label: 'Libur', cellCode: 'OFF', group: 'schedule' },
@@ -24,31 +29,6 @@ export const DEFAULT_COLORS = {
   attendance_LEAVE: { bg: '#fef3c7', fg: '#b45309', border: '#fcd34d' },
   attendance_OFF: { bg: '#f1f5f9', fg: '#64748b', border: '#cbd5e1' },
 };
-
-const SHIFT_FALLBACK = [
-  { bg: '#dbeafe', fg: '#1e40af', border: '#93c5fd' },
-  { bg: '#dcfce7', fg: '#166534', border: '#86efac' },
-  { bg: '#ffedd5', fg: '#c2410c', border: '#fdba74' },
-  { bg: '#fce7f3', fg: '#9d174d', border: '#f9a8d4' },
-  { bg: '#e0e7ff', fg: '#3730a3', border: '#a5b4fc' },
-  { bg: '#ccfbf1', fg: '#0f766e', border: '#5eead4' },
-  { bg: '#fef9c3', fg: '#a16207', border: '#fde047' },
-  { bg: '#f3e8ff', fg: '#7e22ce', border: '#d8b4fe' },
-];
-
-export function hashCode(str = '') {
-  let hash = 0;
-  for (let i = 0; i < str.length; i += 1) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-export function fallbackShiftColor(code) {
-  if (!code) return null;
-  return SHIFT_FALLBACK[hashCode(code) % SHIFT_FALLBACK.length];
-}
 
 export function seedDisplayColorSettings(db) {
   const insert = db.prepare(`
@@ -86,13 +66,23 @@ export function getDisplayColorsPayload(db) {
   const shifts = db.prepare(`
     SELECT id, code, name, start_time, end_time, color_bg, color_fg, color_border
     FROM shifts WHERE ${NOT_DELETED} ORDER BY name
-  `).all();
+  `).all().map(enrichShiftColorFields);
 
   return { scheduleStatus, attendanceStatus, shifts };
 }
 
 function isHexColor(v) {
   return typeof v === 'string' && /^#[0-9A-Fa-f]{6}$/.test(v);
+}
+
+function normalizeStatusColors(colors) {
+  if (!isHexColor(colors?.bg)) return null;
+  const derived = deriveCellColors(colors.bg);
+  return {
+    bg: colors.bg,
+    fg: isHexColor(colors.fg) ? colors.fg : derived.fg,
+    border: isHexColor(colors.border) ? colors.border : derived.border,
+  };
 }
 
 export function updateDisplayColors(db, body, userId = 'system') {
@@ -108,31 +98,34 @@ export function updateDisplayColors(db, body, userId = 'system') {
 
   if (body.scheduleStatus) {
     for (const def of SCHEDULE_STATUS_DEFS) {
-      const c = body.scheduleStatus[def.status];
-      if (!c) continue;
-      if (!isHexColor(c.bg) || !isHexColor(c.fg)) continue;
-      updateSetting.run(c.bg, c.fg, isHexColor(c.border) ? c.border : c.bg, userId, now, def.key);
+      const normalized = normalizeStatusColors(body.scheduleStatus[def.status]);
+      if (!normalized) continue;
+      updateSetting.run(normalized.bg, normalized.fg, normalized.border, userId, now, def.key);
     }
   }
 
   if (body.attendanceStatus) {
     for (const def of ATTENDANCE_STATUS_DEFS) {
-      const c = body.attendanceStatus[def.status];
-      if (!c) continue;
-      if (!isHexColor(c.bg) || !isHexColor(c.fg)) continue;
-      updateSetting.run(c.bg, c.fg, isHexColor(c.border) ? c.border : c.bg, userId, now, def.key);
+      const normalized = normalizeStatusColors(body.attendanceStatus[def.status]);
+      if (!normalized) continue;
+      updateSetting.run(normalized.bg, normalized.fg, normalized.border, userId, now, def.key);
     }
   }
 
   if (Array.isArray(body.shifts)) {
     for (const s of body.shifts) {
-      if (!s.id) continue;
-      const bg = isHexColor(s.color_bg) ? s.color_bg : null;
-      const fg = isHexColor(s.color_fg) ? s.color_fg : null;
-      const border = isHexColor(s.color_border) ? s.color_border : null;
-      updateShift.run(bg, fg, border, userId, now, s.id);
+      if (!s?.id) continue;
+      const normalized = normalizeStatusColors({
+        bg: s.color_bg,
+        fg: s.color_fg,
+        border: s.color_border,
+      });
+      if (!normalized) continue;
+      updateShift.run(normalized.bg, normalized.fg, normalized.border, userId, now, s.id);
     }
   }
 
   return getDisplayColorsPayload(db);
 }
+
+export { ensureShiftDefaultColors, enrichShiftColorFields };
