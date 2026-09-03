@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { defaultShiftColorForCode } from './utils/colorUtils.js';
+import { seedDummyData } from './seedDummyData.js';
 
 const ALL_PERMISSIONS = ['*', 'karyawan:read', 'karyawan:write', 'master:read', 'master:write', 'org:read', 'org:write', 'users:read', 'users:write', 'logs:read'];
 
@@ -40,7 +40,7 @@ export function seedDatabase(db) {
 
   const branchId = db.prepare(`
     INSERT INTO branches (company_id, code, name, address, phone, status, created_by, updated_by)
-    VALUES (?, 'BR001', 'Kantor Pusat', 'Jakarta', '021-1234567', 1, 'system', 'system')
+    VALUES (?, 'OFFICE', 'Kantor Pusat', 'Jakarta', '021-1234567', 1, 'system', 'system')
   `).run(companyId).lastInsertRowid;
 
   const deptId = db.prepare(`
@@ -51,18 +51,28 @@ export function seedDatabase(db) {
   db.prepare('INSERT INTO department_branches (department_id, branch_id) VALUES (?, ?)').run(deptId, branchId);
 
   db.prepare(`
-    INSERT INTO positions (department_id, code, name, level, status, created_by, updated_by)
-    VALUES (?, 'DEV', 'Software Developer', 'Staff', 1, 'system', 'system')
-  `).run(deptId);
+    INSERT INTO departments (code, name, scope, status, created_by, updated_by)
+    VALUES ('HR', 'Human Resources', 'BRANCH', 1, 'system', 'system')
+  `).run();
 
-  const insShift = db.prepare(`
-    INSERT INTO shifts (code, name, start_time, end_time, break_start, break_end, late_tolerance_minutes, early_out_tolerance_minutes, status, color_bg, color_fg, color_border, created_by, updated_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 'system', 'system')
-  `);
-  const pagi = defaultShiftColorForCode('PAGI');
-  insShift.run('PAGI', 'Shift Pagi', '08:00', '17:00', '12:00', '13:00', 15, 15, pagi.bg, pagi.fg, pagi.border);
-  const sore = defaultShiftColorForCode('SORE');
-  insShift.run('SORE', 'Shift Sore', '14:00', '22:00', '18:00', '19:00', 10, 10, sore.bg, sore.fg, sore.border);
+  db.prepare(`
+    INSERT INTO departments (code, name, scope, status, created_by, updated_by)
+    VALUES ('FIN', 'Keuangan', 'BRANCH', 1, 'system', 'system')
+  `).run();
+
+  db.prepare(`
+    INSERT INTO departments (code, name, scope, status, created_by, updated_by)
+    VALUES ('KASIR', 'Kasir', 'BRANCH', 1, 'system', 'system')
+  `).run();
+
+  const hrDept = db.prepare('SELECT id FROM departments WHERE code = ?').get('HR');
+  const finDept = db.prepare('SELECT id FROM departments WHERE code = ?').get('FIN');
+  const kasirDept = db.prepare('SELECT id FROM departments WHERE code = ?').get('KASIR');
+  db.prepare('INSERT INTO department_branches (department_id, branch_id) VALUES (?, ?)').run(hrDept.id, branchId);
+  db.prepare('INSERT INTO department_branches (department_id, branch_id) VALUES (?, ?)').run(finDept.id, branchId);
+  db.prepare('INSERT INTO department_branches (department_id, branch_id) VALUES (?, ?)').run(kasirDept.id, branchId);
+
+  seedDummyData(db);
 }
 
 export { ALL_PERMISSIONS };
