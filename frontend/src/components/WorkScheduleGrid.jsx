@@ -84,6 +84,7 @@ export default function WorkScheduleGrid({
   toolbarExtra = null,
   emptyMessage,
   fitMonth = false,
+  showOffDays = false,
 }) {
   const { config, shiftsByCode } = useDisplayColors();
   const bounds = useMemo(() => monthBounds(month), [month]);
@@ -108,7 +109,7 @@ export default function WorkScheduleGrid({
       <table className={`schedule-grid${fitMonth ? ' schedule-grid--fit-month' : ''}`}>
         <thead>
           <tr>
-            <ScheduleGridEmployeeHeader />
+            <ScheduleGridEmployeeHeader showOffDays={showOffDays} />
             {dates.map((d) => (
               <th
                 key={d.date}
@@ -124,7 +125,7 @@ export default function WorkScheduleGrid({
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <ScheduleGridEmployeeCells row={row} />
+              <ScheduleGridEmployeeCells row={row} showOffDays={showOffDays} />
               {dates.map((d) => {
                 const item = cellMap.get(`${row.id}::${d.date}`);
                 const display = getScheduleCellDisplay(item, config, shiftsByCode);

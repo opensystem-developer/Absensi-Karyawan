@@ -17,6 +17,7 @@ import { logActivity, logDataChanges, diffRecords } from '../utils/logging.js';
 import { checkMasterDataReady, assertMasterDataReady } from '../utils/masterData.js';
 import { generateEmployeeNo } from '../utils/employeeNo.js';
 import { enrichKaryawanListWithPositions, enrichKaryawanWithPosition } from '../utils/karyawanHelpers.js';
+import { branchSqlInClause, resolveBranchFilter } from '../utils/branchAccess.js';
 
 const router = Router();
 
@@ -80,21 +81,31 @@ router.get('/preview-employee-no', (req, res) => {
 
 router.get('/', (req, res) => {
   try {
-    const { search, status } = req.query;
-    let sql = `SELECT * FROM karyawan WHERE ${NOT_DELETED}`;
+    const { search, status, branch_id: branchIdQuery } = req.query;
+    const branchFilter = resolveBranchFilter(req, branchIdQuery);
+    if (branchFilter.error) return res.status(403).json({ error: branchFilter.error });
+
+    let sql = `SELECT k.*, b.code AS branch_code, b.name AS branch_name
+      FROM karyawan k
+      LEFT JOIN branches b ON b.id = k.branch_id AND b.deleted_at IS NULL
+      WHERE k.deleted_at IS NULL`;
     const params = [];
 
+    const branchClause = branchSqlInClause(branchFilter.branchIds, 'k.branch_id');
+    sql += branchClause.sql;
+    params.push(...branchClause.params);
+
     if (search) {
-      sql += ` AND (nama_lengkap LIKE ? OR employee_no LIKE ? OR nik LIKE ? OR nama_panggilan LIKE ?)`;
+      sql += ` AND (k.nama_lengkap LIKE ? OR k.employee_no LIKE ? OR k.nik LIKE ? OR k.nama_panggilan LIKE ?)`;
       const term = `%${search}%`;
       params.push(term, term, term, term);
     }
     if (status) {
-      sql += ' AND status_karyawan = ?';
+      sql += ' AND k.status_karyawan = ?';
       params.push(status);
     }
 
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY k.created_at DESC';
     const rows = db.prepare(sql).all(...params);
     res.json(enrichKaryawanListWithPositions(db, rows));
   } catch (err) {

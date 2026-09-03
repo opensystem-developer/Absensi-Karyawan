@@ -24,6 +24,10 @@ export function AuthProvider({ children }) {
     setUser(data.user);
   }
 
+  function updateUser(next) {
+    setUser((prev) => (prev ? { ...prev, ...next } : next));
+  }
+
   function logout() {
     setToken(null);
     setUser(null);
@@ -41,8 +45,17 @@ export function AuthProvider({ children }) {
     return hasPermission(`${module}:write`, '*');
   }
 
+  function canAccessBranch(branchId) {
+    if (!user) return false;
+    if (user.allBranches || user.permissions?.includes('*')) return true;
+    return (user.branchIds || []).includes(Number(branchId));
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, hasPermission, canWrite }}>
+    <AuthContext.Provider value={{
+      user, token, login, logout, updateUser, hasPermission, canWrite, canAccessBranch,
+    }}
+    >
       {children}
     </AuthContext.Provider>
   );

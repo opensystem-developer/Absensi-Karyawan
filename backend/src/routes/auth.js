@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import db from '../db.js';
 import { signToken, parsePermissions } from '../middleware/auth.js';
 import { logActivity } from '../utils/logging.js';
+import { loadBranchAccess, getUserBranchesPayload } from '../utils/branchAccess.js';
+import { NOT_DELETED } from '../utils/audit.js';
 
 const router = Router();
 
@@ -22,12 +24,32 @@ router.post('/login', (req, res) => {
     }
 
     const permissions = parsePermissions(user.permissions);
+    const branchAccess = loadBranchAccess(db, {
+      id: user.id,
+      permissions,
+      branchScope: user.branch_scope,
+    });
+    const branches = branchAccess.allBranches
+      ? db.prepare(`SELECT id, code, name FROM branches WHERE ${NOT_DELETED} ORDER BY name`).all()
+      : getUserBranchesPayload(db, user.id);
+
     const token = signToken({ id: user.id, username: user.username, role_code: user.role_code, permissions });
     logActivity({ userId: user.id, username: user.username, action: 'LOGIN', module: 'auth', description: 'User login', ip: req.ip });
 
     res.json({
       token,
-      user: { id: user.id, username: user.username, fullName: user.full_name, role: user.role_code, roleName: user.role_name, permissions },
+      user: {
+        id: user.id,
+        username: user.username,
+        fullName: user.full_name,
+        role: user.role_code,
+        roleName: user.role_name,
+        permissions,
+        branchScope: branchAccess.branchScope,
+        allBranches: branchAccess.allBranches,
+        branchIds: branchAccess.branchIds,
+        branches,
+      },
     });
   } catch (err) {
     console.error(err);

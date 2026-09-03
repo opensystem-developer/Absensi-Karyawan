@@ -89,30 +89,42 @@ const POSITION_SUBQUERY_NAME = `
     LIMIT 1
   )`;
 
-export function listWorkSchedulesGlobal(db, { employeeId, dateFrom, dateTo } = {}) {
+export function listWorkSchedulesGlobal(db, { employeeId, dateFrom, dateTo, branchIds = null } = {}) {
+  if (branchIds !== null && branchIds.length === 0) return [];
+
   let sql = `
-    SELECT ws.*, k.nama_lengkap AS employee_name, k.employee_no,
+    SELECT ws.*, k.nama_lengkap AS employee_name, k.employee_no, k.branch_id,
+      b.code AS branch_code, b.name AS branch_name,
       ${POSITION_SUBQUERY_CODE} AS position_code,
       ${POSITION_SUBQUERY_NAME} AS position_name
     FROM work_schedules ws
     JOIN karyawan k ON k.id = ws.employee_id AND k.deleted_at IS NULL
+    LEFT JOIN branches b ON b.id = k.branch_id AND b.deleted_at IS NULL
     WHERE ws.deleted_at IS NULL
   `;
   const params = [];
   if (employeeId) { sql += ' AND ws.employee_id = ?'; params.push(employeeId); }
   if (dateFrom) { sql += ' AND ws.work_date >= ?'; params.push(dateFrom); }
   if (dateTo) { sql += ' AND ws.work_date <= ?'; params.push(dateTo); }
+  if (branchIds !== null) {
+    sql += ` AND k.branch_id IN (${branchIds.map(() => '?').join(',')})`;
+    params.push(...branchIds);
+  }
   sql += ' ORDER BY ws.work_date DESC, k.nama_lengkap ASC';
   return db.prepare(sql).all(...params).map(enrichWorkScheduleRow);
 }
 
-export function listAttendancesGlobal(db, { employeeId, dateFrom, dateTo, status } = {}) {
+export function listAttendancesGlobal(db, { employeeId, dateFrom, dateTo, status, branchIds = null } = {}) {
+  if (branchIds !== null && branchIds.length === 0) return [];
+
   let sql = `
-    SELECT a.*, k.nama_lengkap AS employee_name, k.employee_no,
+    SELECT a.*, k.nama_lengkap AS employee_name, k.employee_no, k.branch_id,
+      b.code AS branch_code, b.name AS branch_name,
       ${POSITION_SUBQUERY_CODE} AS position_code,
       ${POSITION_SUBQUERY_NAME} AS position_name
     FROM attendances a
     JOIN karyawan k ON k.id = a.employee_id AND k.deleted_at IS NULL
+    LEFT JOIN branches b ON b.id = k.branch_id AND b.deleted_at IS NULL
     WHERE a.deleted_at IS NULL
   `;
   const params = [];
@@ -120,6 +132,10 @@ export function listAttendancesGlobal(db, { employeeId, dateFrom, dateTo, status
   if (dateFrom) { sql += ' AND a.work_date >= ?'; params.push(dateFrom); }
   if (dateTo) { sql += ' AND a.work_date <= ?'; params.push(dateTo); }
   if (status) { sql += ' AND a.status = ?'; params.push(status); }
+  if (branchIds !== null) {
+    sql += ` AND k.branch_id IN (${branchIds.map(() => '?').join(',')})`;
+    params.push(...branchIds);
+  }
   sql += ' ORDER BY a.work_date DESC, k.nama_lengkap ASC';
   return db.prepare(sql).all(...params).map(enrichAttendanceRow);
 }

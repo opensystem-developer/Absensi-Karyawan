@@ -6,10 +6,11 @@ import {
 } from '../utils/audit.js';
 import { enrichEmployeeShiftRow } from '../utils/shiftHelpers.js';
 import { generateMonthlyWorkSchedules } from '../utils/scheduleGenerator.js';
+import { assertEmployeeBranchAccess } from '../utils/branchAccess.js';
 
 const router = Router({ mergeParams: true });
 
-const FIELDS = ['shift_id', 'effective_from', 'effective_to'];
+const FIELDS = ['shift_id', 'effective_from', 'effective_to', 'monthly_off_days'];
 
 function pickFields(body) {
   const data = {};
@@ -17,6 +18,9 @@ function pickFields(body) {
     if (body[field] !== undefined) data[field] = body[field] === '' ? null : body[field];
   }
   if (data.shift_id) data.shift_id = parseInt(data.shift_id, 10);
+  if (data.monthly_off_days !== undefined && data.monthly_off_days !== null) {
+    data.monthly_off_days = parseInt(data.monthly_off_days, 10) || 4;
+  }
   return data;
 }
 
@@ -55,13 +59,15 @@ router.post('/', (req, res) => {
   try {
     const employeeId = parseInt(req.params.employeeId, 10);
     const userId = getUserId(req);
-    if (!ensureEmployee(db, employeeId)) {
-      return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
-    }
+    const access = assertEmployeeBranchAccess(db, req, employeeId);
+    if (!access.ok) return res.status(access.status).json({ error: access.error });
 
     const data = pickFields(req.body);
     if (!data.shift_id || !data.effective_from) {
       return res.status(400).json({ error: 'shift_id dan effective_from wajib diisi' });
+    }
+    if (data.monthly_off_days === undefined || data.monthly_off_days === null) {
+      data.monthly_off_days = 4;
     }
 
     data.employee_id = employeeId;
@@ -80,6 +86,7 @@ router.post('/', (req, res) => {
       shiftId: created.shift_id,
       effectiveFrom: created.effective_from,
       effectiveTo: created.effective_to,
+      monthlyOffDays: created.monthly_off_days ?? 4,
       userId,
     });
 

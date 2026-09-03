@@ -10,6 +10,7 @@ import {
   listWorkSchedulesGlobal, listAttendancesGlobal,
   WORK_SCHEDULE_STATUSES, ATTENDANCE_STATUSES,
 } from '../utils/shiftHelpers.js';
+import { resolveBranchFilter } from '../utils/branchAccess.js';
 
 const workSchedulesGlobalRouter = Router();
 const attendancesGlobalRouter = Router();
@@ -44,10 +45,14 @@ function pickAttendance(body) {
 workSchedulesGlobalRouter.get('/', (req, res) => {
   try {
     const employeeId = req.query.employee_id ? parseInt(req.query.employee_id, 10) : null;
+    const branchFilter = resolveBranchFilter(req, req.query.branch_id);
+    if (branchFilter.error) return res.status(403).json({ error: branchFilter.error });
+
     res.json(listWorkSchedulesGlobal(db, {
       employeeId,
       dateFrom: req.query.work_date_from || null,
       dateTo: req.query.work_date_to || null,
+      branchIds: branchFilter.branchIds,
     }));
   } catch (err) {
     handleDbError(err, res);
@@ -122,11 +127,15 @@ workSchedulesGlobalRouter.delete('/:id', (req, res) => {
 attendancesGlobalRouter.get('/', (req, res) => {
   try {
     const employeeId = req.query.employee_id ? parseInt(req.query.employee_id, 10) : null;
+    const branchFilter = resolveBranchFilter(req, req.query.branch_id);
+    if (branchFilter.error) return res.status(403).json({ error: branchFilter.error });
+
     res.json(listAttendancesGlobal(db, {
       employeeId,
       dateFrom: req.query.work_date_from || null,
       dateTo: req.query.work_date_to || null,
       status: req.query.status || null,
+      branchIds: branchFilter.branchIds,
     }));
   } catch (err) {
     handleDbError(err, res);

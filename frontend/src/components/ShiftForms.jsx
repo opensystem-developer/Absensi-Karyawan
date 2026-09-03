@@ -37,9 +37,19 @@ export function EmployeeShiftForm({ form, onChange, onSubmit, onCancel, error, s
         <Field label="Berlaku Sampai">
           <DateInput value={form.effective_to} onChange={set('effective_to')} />
         </Field>
+        <Field label="Hari Libur / Bulan" required hint="Jumlah hari OFF yang dijadwalkan otomatis per bulan. Libur karyawan jabatan sama di cabang yang sama tidak akan bersamaan.">
+          <input
+            type="number"
+            min={0}
+            max={31}
+            value={form.monthly_off_days ?? 4}
+            onChange={(e) => onChange({ ...form, monthly_off_days: parseInt(e.target.value, 10) || 0 })}
+            required
+          />
+        </Field>
         <div className="form-group full-width">
           <p className="form-hint">
-            Setelah shift disimpan, sistem otomatis membuat <strong>jadwal kerja 1 bulan</strong> (dari tanggal berlaku hingga akhir bulan kalender).
+            Setelah shift disimpan, sistem otomatis membuat <strong>jadwal kerja 1 bulan</strong> (dari tanggal berlaku hingga akhir bulan kalender), termasuk hari libur (OFF).
           </p>
         </div>
       </div>

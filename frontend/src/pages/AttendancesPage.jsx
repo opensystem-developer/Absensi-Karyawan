@@ -12,13 +12,21 @@ export default function AttendancesPage() {
   const [loading, setLoading] = useState(true);
   const [employeeFilter, setEmployeeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [branchFilter, setBranchFilter] = useState('');
   const [month, setMonth] = useState(currentMonthKey);
   const [colorModalOpen, setColorModalOpen] = useState(false);
   const [error, setError] = useState('');
-  const { canWrite } = useAuth();
+  const { canWrite, user } = useAuth();
   const writable = canWrite('karyawan') || canWrite('master');
+  const accessibleBranches = user?.branches || [];
 
   const bounds = useMemo(() => monthBounds(month), [month]);
+
+  const loadEmployees = useCallback(async () => {
+    const params = {};
+    if (branchFilter) params.branch_id = branchFilter;
+    return fetchKaryawan(params);
+  }, [branchFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -29,16 +37,21 @@ export default function AttendancesPage() {
       });
       if (employeeFilter) params.set('employee_id', employeeFilter);
       if (statusFilter) params.set('status', statusFilter);
-      setItems(await attendancesApi.list(params.toString()));
+      if (branchFilter) params.set('branch_id', branchFilter);
+      const [attendanceItems, employeeItems] = await Promise.all([
+        attendancesApi.list(params.toString()),
+        loadEmployees(),
+      ]);
+      setItems(attendanceItems);
+      setEmployees(employeeItems);
       setError('');
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [employeeFilter, statusFilter, bounds.from, bounds.to]);
+  }, [employeeFilter, statusFilter, branchFilter, bounds.from, bounds.to, loadEmployees]);
 
-  useEffect(() => { fetchKaryawan().then(setEmployees).catch(() => {}); }, []);
   useEffect(() => { load(); }, [load]);
 
   const rows = useMemo(() => {
@@ -73,6 +86,15 @@ export default function AttendancesPage() {
     </select>
   );
 
+  const branchFilterSelect = accessibleBranches.length > 1 ? (
+    <select className="filter-select" value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} aria-label="Filter cabang">
+      <option value="">Semua Cabang</option>
+      {accessibleBranches.map((b) => (
+        <option key={b.id} value={b.id}>{b.code} — {b.name}</option>
+      ))}
+    </select>
+  ) : null;
+
   return (
     <div className="page page-fill page-schedule">
       <div className="page-header page-header-compact">
@@ -100,7 +122,7 @@ export default function AttendancesPage() {
           rows={rows}
           attendances={items}
           loading={loading}
-          toolbarExtra={<>{employeeFilterSelect}{statusFilterSelect}</>}
+          toolbarExtra={<>{employeeFilterSelect}{statusFilterSelect}{branchFilterSelect}</>}
           emptyMessage={`Belum ada data kehadiran untuk ${bounds.label}.`}
           fitMonth
         />

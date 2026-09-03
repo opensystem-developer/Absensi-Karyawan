@@ -20,7 +20,8 @@
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   --schedule-name-width: 180px;
   --schedule-position-width: 76px;
-  --schedule-sticky-width: calc(var(--schedule-name-width) + var(--schedule-position-width));
+  --schedule-off-width: 52px;
+  --schedule-sticky-width: calc(var(--schedule-name-width) + var(--schedule-position-width) + var(--schedule-off-width));
 }
 
 html,
@@ -672,6 +673,129 @@ tr:hover td {
   min-width: var(--schedule-name-width);
   max-width: var(--schedule-name-width);
   padding: 0.5rem 0.75rem !important;
+}
+
+.schedule-grid-position-col {
+  width: var(--schedule-position-width);
+  min-width: var(--schedule-position-width);
+  max-width: var(--schedule-position-width);
+  padding: 0.35rem 0.4rem !important;
+  left: var(--schedule-name-width);
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.schedule-grid-off-col {
+  width: var(--schedule-off-width);
+  min-width: var(--schedule-off-width);
+  max-width: var(--schedule-off-width);
+  padding: 0.35rem 0.25rem !important;
+  left: calc(var(--schedule-name-width) + var(--schedule-position-width));
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.schedule-grid-off-count {
+  display: inline-block;
+  min-width: 1.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 0.1rem 0.25rem;
+}
+
+.schedule-grid-branch {
+  font-size: 0.62rem;
+  display: block;
+  line-height: 1.1;
+}
+
+.multi-select-filter {
+  position: relative;
+}
+
+.multi-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 160px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.multi-select-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.multi-select-caret {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.multi-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  min-width: 220px;
+  max-height: 260px;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: 0.35rem 0;
+}
+
+.multi-select-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.multi-select-option:hover {
+  background: #f8fafc;
+}
+
+.multi-select-clear {
+  display: block;
+  width: calc(100% - 1rem);
+  margin: 0.35rem auto 0.15rem;
+  padding: 0.35rem;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.multi-select-empty {
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.branch-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.branch-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
 }
 
 .schedule-grid-position-col {

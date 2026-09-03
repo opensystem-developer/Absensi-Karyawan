@@ -13,6 +13,9 @@ import displayColorsRouter from './routes/displayColors.js';
 import shiftsRouter from './routes/shifts.js';
 import { workSchedulesGlobalRouter, attendancesGlobalRouter } from './routes/attendanceGlobal.js';
 import { authenticate, requirePermission } from './middleware/auth.js';
+import db from './db.js';
+import { getUserBranchesPayload } from './utils/branchAccess.js';
+import { NOT_DELETED } from './utils/audit.js';
 import './db.js';
 
 const app = express();
@@ -30,7 +33,15 @@ app.use('/api/auth', authRouter);
 app.use(authenticate);
 
 app.get('/api/auth/me', (req, res) => {
-  res.json({ user: req.user });
+  const branches = req.user.allBranches
+    ? db.prepare(`SELECT id, code, name FROM branches WHERE ${NOT_DELETED} ORDER BY name`).all()
+    : getUserBranchesPayload(db, req.user.id);
+  res.json({
+    user: {
+      ...req.user,
+      branches,
+    },
+  });
 });
 
 app.use('/api/karyawan', requirePermission('karyawan:read', 'karyawan:write', '*'), karyawanRouter);

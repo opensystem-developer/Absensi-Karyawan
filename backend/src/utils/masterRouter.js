@@ -19,6 +19,7 @@ export function createMasterRouter(config) {
     validate,
     transformResponse = (r) => r,
     transformInput,
+    listTransform,
   } = config;
 
   const router = Router();
@@ -43,7 +44,9 @@ export function createMasterRouter(config) {
         if (extra) sql += extra;
       }
       sql += ` ORDER BY ${orderBy}`;
-      res.json(db.prepare(sql).all(...params).map(transformResponse));
+      let rows = db.prepare(sql).all(...params).map(transformResponse);
+      if (listTransform) rows = listTransform(rows, req);
+      res.json(rows);
     } catch (err) {
       handleDbError(err, res);
     }

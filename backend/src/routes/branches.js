@@ -15,4 +15,9 @@ export default createMasterRouter({
     if (req.query.company_id) { params.push(req.query.company_id); return ' AND company_id = ?'; }
     return '';
   },
+  listTransform: (rows, req) => {
+    if (req.user?.allBranches) return rows;
+    const allowed = new Set(req.user?.branchIds || []);
+    return rows.filter((r) => allowed.has(r.id));
+  },
 });

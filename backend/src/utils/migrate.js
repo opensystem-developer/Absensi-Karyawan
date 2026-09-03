@@ -148,4 +148,29 @@ export function runMigrations(db) {
 
   seedDisplayColorSettings(db);
   ensureShiftDefaultColors(db);
+
+  addColumn(db, 'users', 'branch_scope', "VARCHAR(20) NOT NULL DEFAULT 'BRANCH'");
+  addColumn(db, 'employee_shifts', 'monthly_off_days', 'INTEGER NOT NULL DEFAULT 4');
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_branches (
+      user_id INTEGER NOT NULL,
+      branch_id INTEGER NOT NULL,
+      PRIMARY KEY (user_id, branch_id),
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (branch_id) REFERENCES branches(id)
+    );
+  `);
+
+  db.prepare("UPDATE users SET branch_scope = 'ALL' WHERE username = 'admin'").run();
+
+  const hrUser = db.prepare('SELECT id FROM users WHERE username = ? AND deleted_at IS NULL').get('hr');
+  if (hrUser) {
+    const hrBranchCount = db.prepare('SELECT COUNT(*) AS n FROM user_branches WHERE user_id = ?').get(hrUser.id).n;
+    if (hrBranchCount === 0) {
+      const allBranches = db.prepare('SELECT id FROM branches WHERE deleted_at IS NULL').all();
+      const ins = db.prepare('INSERT OR IGNORE INTO user_branches (user_id, branch_id) VALUES (?, ?)');
+      for (const b of allBranches) ins.run(hrUser.id, b.id);
+    }
+  }
 }

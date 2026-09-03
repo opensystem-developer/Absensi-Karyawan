@@ -35,11 +35,31 @@ function positionMapFromItems(items = []) {
 export function toScheduleGridRows(employees, employeeIds = null, items = []) {
   const idSet = employeeIds ? new Set(employeeIds) : null;
   const positionsByEmployee = positionMapFromItems(items);
+  const offCounts = countOffDaysByEmployee(items);
 
   return employees
     .filter((e) => !idSet || idSet.has(e.id))
-    .map((e) => toScheduleGridRow(e, positionsByEmployee.get(e.id)))
+    .map((e) => {
+      const row = toScheduleGridRow(e, positionsByEmployee.get(e.id));
+      if (!row) return null;
+      return {
+        ...row,
+        offDaysCount: offCounts.get(e.id) || 0,
+        branchId: e.branch_id || null,
+        branchCode: e.branch_code || '',
+        branchName: e.branch_name || '',
+      };
+    })
     .filter(Boolean);
+}
+
+function countOffDaysByEmployee(items = []) {
+  const map = new Map();
+  for (const item of items) {
+    if (item.status !== 'OFF') continue;
+    map.set(item.employee_id, (map.get(item.employee_id) || 0) + 1);
+  }
+  return map;
 }
 
 /** Urutkan baris grid jadwal: nama atau jabatan (kode singkat). */
@@ -62,19 +82,21 @@ export function sortScheduleGridRows(rows, sortBy = 'name') {
   return sorted;
 }
 
-/** Filter baris grid berdasarkan nama / no karyawan / kode jabatan. */
-export function filterScheduleGridRows(rows, { nameQuery = '', positionCode = '' } = {}) {
+/** Filter baris grid berdasarkan nama / no karyawan / kode jabatan (multi). */
+export function filterScheduleGridRows(rows, { nameQuery = '', positionCodes = [] } = {}) {
   const q = nameQuery.trim().toLowerCase();
-  const pos = positionCode.trim();
+  const codes = new Set((positionCodes || []).filter(Boolean));
 
   return rows.filter((row) => {
-    if (pos && row.positionShort !== pos) return false;
+    if (codes.size > 0 && !codes.has(row.positionShort)) return false;
     if (!q) return true;
     const haystack = [
       row.name,
       row.employeeNo,
       row.positionShort,
       row.positionName,
+      row.branchCode,
+      row.branchName,
     ].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(q);
   });

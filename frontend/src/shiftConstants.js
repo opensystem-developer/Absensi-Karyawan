@@ -17,6 +17,7 @@ export const EMPTY_EMPLOYEE_SHIFT_FORM = {
   shift_id: '',
   effective_from: '',
   effective_to: '',
+  monthly_off_days: 4,
 };
 
 export function toEmployeeShiftFormData(item) {
@@ -25,6 +26,7 @@ export function toEmployeeShiftFormData(item) {
     shift_id: item.shift_id ?? '',
     effective_from: item.effective_from?.slice?.(0, 10) || item.effective_from || '',
     effective_to: item.effective_to?.slice?.(0, 10) || item.effective_to || '',
+    monthly_off_days: item.monthly_off_days ?? 4,
   };
 }
 

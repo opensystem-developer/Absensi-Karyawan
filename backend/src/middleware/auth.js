@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import db from '../db.js';
+import { attachBranchAccess } from '../utils/branchAccess.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'karyawan-dev-secret-change-in-production';
 
@@ -48,6 +49,7 @@ export function authenticate(req, res, next) {
       role: user.role_code,
       permissions: parsePermissions(user.permissions),
     };
+    attachBranchAccess(db, req);
     next();
   } catch {
     return res.status(401).json({ error: 'Token tidak valid atau kedaluwarsa' });
@@ -69,6 +71,7 @@ export function optionalAuth(req, _res, next) {
           role: user.role_code,
           permissions: parsePermissions(user.permissions),
         };
+        attachBranchAccess(db, req);
       }
     } catch { /* ignore */ }
   }
