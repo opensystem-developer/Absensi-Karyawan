@@ -1,26 +1,14 @@
 import { useMemo } from 'react';
 import { formatTimeRange } from '../shiftConstants';
 import { buildMonthDates, monthBounds, shiftMonth } from '../utils/scheduleMonth';
+import {
+  buildScheduleCellMap,
+  getScheduleCellDisplay,
+  legendColorForShift,
+  legendColorForStatusCode,
+} from '../utils/scheduleCellDisplay';
 
-const STATUS_CELL = {
-  OFF: 'OFF',
-  LEAVE: 'CT',
-  HOLIDAY: 'LN',
-};
-
-export function scheduleCellLabel(item) {
-  if (!item) return '';
-  if (item.shift_code) return item.shift_code;
-  return STATUS_CELL[item.status] || item.status || '';
-}
-
-export function buildScheduleCellMap(schedules) {
-  const map = new Map();
-  for (const item of schedules) {
-    map.set(`${item.employee_id}::${item.work_date}`, item);
-  }
-  return map;
-}
+export { scheduleCellLabel, buildScheduleCellMap } from '../utils/scheduleCellDisplay';
 
 export function buildShiftLegend(shifts, schedules = []) {
   const byCode = new Map();
@@ -32,6 +20,7 @@ export function buildShiftLegend(shifts, schedules = []) {
         name: shift.name,
         start: shift.start_time,
         end: shift.end_time,
+        kind: 'shift',
       });
     }
   }
@@ -43,21 +32,43 @@ export function buildShiftLegend(shifts, schedules = []) {
       name: item.shift_name,
       start: item.shift_start || item.start_time,
       end: item.shift_end || item.end_time,
+      kind: 'shift',
     });
   }
 
   return Array.from(byCode.values()).sort((a, b) => a.code.localeCompare(b.code));
 }
 
+const STATUS_LEGEND = [
+  { code: 'OFF', label: 'Libur', kind: 'status' },
+  { code: 'CT', label: 'Cuti', kind: 'status' },
+  { code: 'LN', label: 'Libur Nasional', kind: 'status' },
+];
+
 function cellTitle(item) {
   if (!item) return '';
   const parts = [];
+  if (item.status && item.status !== 'WORK') {
+    const statusLabels = { OFF: 'Libur', LEAVE: 'Cuti', HOLIDAY: 'Libur Nasional' };
+    parts.push(statusLabels[item.status] || item.status);
+  }
   if (item.shift_name) parts.push(item.shift_name);
-  if (item.shift_code) parts.push(`(${item.shift_code})`);
+  if (item.shift_code && item.status === 'WORK') parts.push(`(${item.shift_code})`);
   const time = formatTimeRange(item.start_time || item.shift_start, item.end_time || item.shift_end);
-  if (time !== '-') parts.push(time);
-  if (item.status && item.status !== 'WORK') parts.push(`Status: ${item.status}`);
+  if (time !== '-' && item.status === 'WORK') parts.push(time);
   return parts.join(' · ');
+}
+
+function legendSwatchStyle(entry) {
+  const colors = entry.kind === 'status'
+    ? legendColorForStatusCode(entry.code)
+    : legendColorForShift(entry);
+  if (!colors) return {};
+  return {
+    backgroundColor: colors.bg,
+    color: colors.fg,
+    borderColor: colors.border,
+  };
 }
 
 export default function WorkScheduleGrid({
@@ -116,21 +127,21 @@ export default function WorkScheduleGrid({
               </td>
               {dates.map((d) => {
                 const item = cellMap.get(`${row.id}::${d.date}`);
-                const label = scheduleCellLabel(item);
+                const display = getScheduleCellDisplay(item);
                 const clickable = writable && onCellClick;
                 return (
                   <td
                     key={d.date}
                     className={[
-                      'schedule-grid-cell',
+                      display.className,
                       d.isWeekend ? 'schedule-grid-weekend' : '',
-                      item ? 'schedule-grid-filled' : '',
                       clickable ? 'schedule-grid-clickable' : '',
                     ].filter(Boolean).join(' ')}
+                    style={display.style}
                     title={cellTitle(item)}
                     onClick={clickable ? () => onCellClick(row, item, d.date) : undefined}
                   >
-                    {label || <span className="schedule-grid-empty">-</span>}
+                    {display.label || <span className="schedule-grid-empty">-</span>}
                   </td>
                 );
               })}
@@ -141,31 +152,25 @@ export default function WorkScheduleGrid({
     </div>
   );
 
-  const legendBlock = legend.length > 0 && (
+  const legendBlock = (
     <div className="schedule-legend">
       <h4 className="schedule-legend-title">Legenda Shift</h4>
       <div className="schedule-legend-items">
         {legend.map((shift) => (
           <div key={shift.code} className="schedule-legend-item">
-            <span className="schedule-legend-code">{shift.code}</span>
+            <span className="schedule-legend-code" style={legendSwatchStyle(shift)}>{shift.code}</span>
             <span className="schedule-legend-detail">
               {shift.name}
               <span className="text-muted"> · {formatTimeRange(shift.start, shift.end)}</span>
             </span>
           </div>
         ))}
-        <div className="schedule-legend-item">
-          <span className="schedule-legend-code">OFF</span>
-          <span className="schedule-legend-detail">Libur</span>
-        </div>
-        <div className="schedule-legend-item">
-          <span className="schedule-legend-code">CT</span>
-          <span className="schedule-legend-detail">Cuti</span>
-        </div>
-        <div className="schedule-legend-item">
-          <span className="schedule-legend-code">LN</span>
-          <span className="schedule-legend-detail">Libur Nasional</span>
-        </div>
+        {STATUS_LEGEND.map((entry) => (
+          <div key={entry.code} className="schedule-legend-item">
+            <span className="schedule-legend-code" style={legendSwatchStyle(entry)}>{entry.code}</span>
+            <span className="schedule-legend-detail">{entry.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
