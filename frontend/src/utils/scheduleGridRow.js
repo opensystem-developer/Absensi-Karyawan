@@ -61,3 +61,35 @@ export function sortScheduleGridRows(rows, sortBy = 'name') {
   sorted.sort((a, b) => a.name.localeCompare(b.name, 'id'));
   return sorted;
 }
+
+/** Filter baris grid berdasarkan nama / no karyawan / kode jabatan. */
+export function filterScheduleGridRows(rows, { nameQuery = '', positionCode = '' } = {}) {
+  const q = nameQuery.trim().toLowerCase();
+  const pos = positionCode.trim();
+
+  return rows.filter((row) => {
+    if (pos && row.positionShort !== pos) return false;
+    if (!q) return true;
+    const haystack = [
+      row.name,
+      row.employeeNo,
+      row.positionShort,
+      row.positionName,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(q);
+  });
+}
+
+/** Opsi jabatan unik dari baris grid (untuk dropdown filter). */
+export function collectPositionFilterOptions(rows) {
+  const codes = new Map();
+  for (const row of rows) {
+    if (!row.positionShort) continue;
+    if (!codes.has(row.positionShort)) {
+      codes.set(row.positionShort, row.positionName || row.positionShort);
+    }
+  }
+  return [...codes.entries()]
+    .map(([code, name]) => ({ code, name }))
+    .sort((a, b) => a.code.localeCompare(b.code, 'id'));
+}

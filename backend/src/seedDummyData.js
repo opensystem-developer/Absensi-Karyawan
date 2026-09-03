@@ -357,6 +357,138 @@ function backfillMissingEmployeePositions(db, ctx) {
   return filled;
 }
 
+function hashSeed(employeeId, workDate) {
+  const s = `${employeeId}:${workDate}`;
+  let hash = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    hash = ((hash << 5) - hash) + s.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function addMinutesToTime(timeStr, minutes) {
+  if (!timeStr) return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const nh = Math.floor((total % (24 * 60) + 24 * 60) % (24 * 60) / 60);
+  const nm = ((total % 60) + 60) % 60;
+  return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+}
+
+function toDateTime(workDate, timeStr) {
+  if (!workDate || !timeStr) return null;
+  return `${workDate} ${timeStr}:00`;
+}
+
+function deriveAttendanceFromSchedule(schedule) {
+  const seed = hashSeed(schedule.employee_id, schedule.work_date);
+
+  if (schedule.status === 'OFF' || schedule.status === 'HOLIDAY') {
+    return { status: 'OFF', clock_in: null, clock_out: null, late_minutes: 0, early_out_minutes: 0, overtime_minutes: 0 };
+  }
+  if (schedule.status === 'LEAVE') {
+    return { status: 'LEAVE', clock_in: null, clock_out: null, late_minutes: 0, early_out_minutes: 0, overtime_minutes: 0 };
+  }
+
+  const bucket = seed % 100;
+  const start = schedule.start_time || schedule.shift_start || '08:00';
+  const end = schedule.end_time || schedule.shift_end || '17:00';
+
+  if (bucket < 78) {
+    return {
+      status: 'PRESENT',
+      clock_in: toDateTime(schedule.work_date, start),
+      clock_out: toDateTime(schedule.work_date, end),
+      late_minutes: 0,
+      early_out_minutes: 0,
+      overtime_minutes: seed % 3 === 0 ? 30 : 0,
+    };
+  }
+  if (bucket < 90) {
+    const late = 10 + (seed % 35);
+    const clockIn = addMinutesToTime(start, late);
+    return {
+      status: 'LATE',
+      clock_in: toDateTime(schedule.work_date, clockIn),
+      clock_out: toDateTime(schedule.work_date, end),
+      late_minutes: late,
+      early_out_minutes: 0,
+      overtime_minutes: 0,
+    };
+  }
+  return {
+    status: 'ABSENT',
+    clock_in: null,
+    clock_out: null,
+    late_minutes: 0,
+    early_out_minutes: 0,
+    overtime_minutes: 0,
+  };
+}
+
+/** Generate kehadiran dummy dari jadwal kerja September 2026 (idempotent). */
+export function seedDummyAttendances(db, { month = '2026-09' } = {}) {
+  const [year, mon] = month.split('-').map(Number);
+  const lastDay = new Date(year, mon, 0).getDate();
+  const from = `${month}-01`;
+  const to = `${month}-${String(lastDay).padStart(2, '0')}`;
+
+  const schedules = db.prepare(`
+    SELECT ws.*, s.start_time AS shift_start, s.end_time AS shift_end
+    FROM work_schedules ws
+    LEFT JOIN shifts s ON s.id = ws.shift_id AND s.deleted_at IS NULL
+    WHERE ws.deleted_at IS NULL AND ws.work_date >= ? AND ws.work_date <= ?
+  `).all(from, to);
+
+  const existsStmt = db.prepare(`
+    SELECT id FROM attendances
+    WHERE employee_id = ? AND work_date = ? AND deleted_at IS NULL
+  `);
+
+  let created = 0;
+  let skipped = 0;
+
+  const run = db.transaction(() => {
+    for (const schedule of schedules) {
+      if (existsStmt.get(schedule.employee_id, schedule.work_date)) {
+        skipped += 1;
+        continue;
+      }
+
+      const att = deriveAttendanceFromSchedule(schedule);
+      const payload = withAuditOnCreate({
+        employee_id: schedule.employee_id,
+        work_date: schedule.work_date,
+        schedule_id: schedule.id,
+        clock_in: att.clock_in,
+        clock_out: att.clock_out,
+        late_minutes: att.late_minutes,
+        early_out_minutes: att.early_out_minutes,
+        overtime_minutes: att.overtime_minutes,
+        status: att.status,
+        anomaly_flag: att.status === 'LATE' && att.late_minutes > 30 ? 1 : 0,
+        anomaly_reason: att.status === 'LATE' && att.late_minutes > 30 ? 'Keterlambatan > 30 menit' : null,
+      }, USER);
+
+      const cols = Object.keys(payload);
+      db.prepare(
+        `INSERT INTO attendances (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+      ).run(...cols.map((c) => payload[c]));
+      created += 1;
+    }
+  });
+
+  run();
+
+  const total = db.prepare(`
+    SELECT COUNT(*) AS c FROM attendances
+    WHERE deleted_at IS NULL AND work_date >= ? AND work_date <= ?
+  `).get(from, to).c;
+
+  return { created, skipped, total, from, to };
+}
+
 /**
  * Isi data dummy: shift lengkap, jabatan per departemen, dan karyawan contoh.
  * Aman dijalankan berulang (upsert / skip duplikat).
@@ -370,6 +502,9 @@ export function seedDummyData(db) {
     positionsUpdated: 0,
     employeesProcessed: 0,
     positionsBackfilled: 0,
+    attendancesCreated: 0,
+    attendancesSkipped: 0,
+    attendanceCount: 0,
     shiftCount: 0,
     positionCount: 0,
     employeeCount: 0,
@@ -418,6 +553,11 @@ export function seedDummyData(db) {
 
     summary.positionsBackfilled = backfillMissingEmployeePositions(db, ctx);
   })();
+
+  const att = seedDummyAttendances(db, { month: '2026-09' });
+  summary.attendancesCreated = att.created;
+  summary.attendancesSkipped = att.skipped;
+  summary.attendanceCount = att.total;
 
   summary.shiftCount = db.prepare('SELECT COUNT(*) as c FROM shifts WHERE deleted_at IS NULL').get().c;
   summary.positionCount = db.prepare('SELECT COUNT(*) as c FROM positions WHERE deleted_at IS NULL').get().c;

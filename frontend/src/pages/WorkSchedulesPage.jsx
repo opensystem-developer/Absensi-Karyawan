@@ -8,13 +8,20 @@ import DisplayColorSettingsModal from '../components/DisplayColorSettingsModal';
 import { useDisplayColors } from '../context/DisplayColorContext';
 import { useAuth } from '../context/AuthContext';
 import { currentMonthKey, monthBounds } from '../utils/scheduleMonth';
-import { toScheduleGridRow, toScheduleGridRows, sortScheduleGridRows } from '../utils/scheduleGridRow';
+import {
+  toScheduleGridRow,
+  toScheduleGridRows,
+  sortScheduleGridRows,
+  filterScheduleGridRows,
+  collectPositionFilterOptions,
+} from '../utils/scheduleGridRow';
 
 export default function WorkSchedulesPage() {
   const [items, setItems] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [employeeFilter, setEmployeeFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
+  const [positionFilter, setPositionFilter] = useState('');
   const [month, setMonth] = useState(currentMonthKey);
   const [modalOpen, setModalOpen] = useState(false);
   const [colorModalOpen, setColorModalOpen] = useState(false);
@@ -37,7 +44,6 @@ export default function WorkSchedulesPage() {
         work_date_from: bounds.from,
         work_date_to: bounds.to,
       });
-      if (employeeFilter) params.set('employee_id', employeeFilter);
       setItems(await workSchedulesApi.list(params.toString()));
       setError('');
     } catch (err) {
@@ -45,7 +51,7 @@ export default function WorkSchedulesPage() {
     } finally {
       setLoading(false);
     }
-  }, [employeeFilter, bounds.from, bounds.to]);
+  }, [bounds.from, bounds.to]);
 
   useEffect(() => {
     fetchKaryawan().then(setEmployees).catch(() => {});
@@ -53,21 +59,25 @@ export default function WorkSchedulesPage() {
   }, [refreshColors]);
   useEffect(() => { load(); }, [load]);
 
-  const rows = useMemo(() => {
-    if (employeeFilter) {
-      const emp = employees.find((e) => String(e.id) === String(employeeFilter));
-      const positionItem = items.find((i) => String(i.employee_id) === String(employeeFilter));
-      return emp ? [toScheduleGridRow(emp, positionItem ? {
-        position_code: positionItem.position_code,
-        position_name: positionItem.position_name,
-      } : null)] : [];
-    }
-
+  const allRows = useMemo(() => {
     const ids = new Set(items.map((i) => i.employee_id));
-    return sortScheduleGridRows(toScheduleGridRows(employees, ids, items), rowSort);
-  }, [employeeFilter, employees, items, rowSort]);
+    return toScheduleGridRows(employees, ids, items);
+  }, [employees, items]);
 
-  function openCreate(date = bounds.from, employeeId = employeeFilter || '') {
+  const positionOptions = useMemo(
+    () => collectPositionFilterOptions(allRows),
+    [allRows],
+  );
+
+  const rows = useMemo(() => {
+    const filtered = filterScheduleGridRows(allRows, {
+      nameQuery: nameFilter,
+      positionCode: positionFilter,
+    });
+    return sortScheduleGridRows(filtered, rowSort);
+  }, [allRows, nameFilter, positionFilter, rowSort]);
+
+  function openCreate(date = bounds.from, employeeId = '') {
     setEditing(null);
     setForm({ ...EMPTY_WORK_SCHEDULE_FORM, employee_id: employeeId, work_date: date });
     setError('');
@@ -107,18 +117,35 @@ export default function WorkSchedulesPage() {
 
   const toolbarFilters = (
     <>
-      <select className="filter-select" value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)}>
-        <option value="">Semua Karyawan</option>
-        {employees.map((e) => <option key={e.id} value={e.id}>{e.nama_lengkap} ({e.employee_no})</option>)}
+      <input
+        type="search"
+        className="filter-search"
+        placeholder="Cari nama / no karyawan..."
+        value={nameFilter}
+        onChange={(e) => setNameFilter(e.target.value)}
+        aria-label="Filter nama karyawan"
+      />
+      <select
+        className="filter-select"
+        value={positionFilter}
+        onChange={(e) => setPositionFilter(e.target.value)}
+        aria-label="Filter jabatan"
+      >
+        <option value="">Semua Jabatan</option>
+        {positionOptions.map((p) => (
+          <option key={p.code} value={p.code}>{p.code} — {p.name}</option>
+        ))}
       </select>
-      {!employeeFilter && (
-        <select className="filter-select" value={rowSort} onChange={(e) => setRowSort(e.target.value)} aria-label="Urutkan baris">
-          <option value="name">Urut: Nama</option>
-          <option value="position">Urut: Jabatan</option>
-        </select>
-      )}
+      <select className="filter-select" value={rowSort} onChange={(e) => setRowSort(e.target.value)} aria-label="Urutkan baris">
+        <option value="name">Urut: Nama</option>
+        <option value="position">Urut: Jabatan</option>
+      </select>
     </>
   );
+
+  const emptyMessage = nameFilter || positionFilter
+    ? `Tidak ada jadwal yang cocok dengan filter untuk ${bounds.label}.`
+    : `Belum ada jadwal kerja untuk ${bounds.label}.`;
 
   return (
     <div className="page page-fill page-schedule">
@@ -147,7 +174,7 @@ export default function WorkSchedulesPage() {
           writable={writable}
           onCellClick={writable ? handleCellClick : undefined}
           toolbarExtra={toolbarFilters}
-          emptyMessage={`Belum ada jadwal kerja untuk ${bounds.label}.`}
+          emptyMessage={emptyMessage}
           fitMonth
         />
       </div>
