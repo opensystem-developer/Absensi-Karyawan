@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { formatDate, toInputDate } from '../utils/date';
 import DateInput from './DateInput';
+import ExcelColorPicker from './ExcelColorPicker';
 
 export default function CrudPage({ title, subtitle, api, columns, fields, canWrite = true, filterBar }) {
   const [items, setItems] = useState([]);
@@ -181,11 +182,9 @@ export default function CrudPage({ title, subtitle, api, columns, fields, canWri
                           required={field.required}
                         />
                       ) : field.type === 'color' ? (
-                        <input
-                          type="color"
-                          className="color-picker-simple"
-                          value={form[field.name] || '#dbeafe'}
-                          onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
+                        <ExcelColorPicker
+                          value={form[field.name] || '#4F81BD'}
+                          onChange={(hex) => setForm({ ...form, [field.name]: hex })}
                         />
                       ) : (
                         <input

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { displayColorsApi } from '../api';
 import { useDisplayColors } from '../context/DisplayColorContext';
 import { deriveCellColors } from '../utils/colorUtils';
+import ExcelColorPicker from './ExcelColorPicker';
 
 const SCHEDULE_KEYS = [
   { status: 'OFF', label: 'Libur', cellCode: 'OFF' },
@@ -31,12 +32,9 @@ function ColorRow({ title, code, colors, onChange }) {
         <span className="schedule-legend-code" style={swatchStyle}>{code}</span>
         <strong>{title}</strong>
       </div>
-      <input
-        type="color"
-        className="color-picker-simple"
+      <ExcelColorPicker
         value={bg}
-        title="Pilih warna"
-        onChange={(e) => onChange(deriveCellColors(e.target.value))}
+        onChange={(hex) => onChange(deriveCellColors(hex))}
       />
     </div>
   );
