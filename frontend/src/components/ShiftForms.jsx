@@ -37,6 +37,11 @@ export function EmployeeShiftForm({ form, onChange, onSubmit, onCancel, error, s
         <Field label="Berlaku Sampai">
           <DateInput value={form.effective_to} onChange={set('effective_to')} />
         </Field>
+        <div className="form-group full-width">
+          <p className="form-hint">
+            Setelah shift disimpan, sistem otomatis membuat <strong>jadwal kerja 1 bulan</strong> (dari tanggal berlaku hingga akhir bulan kalender).
+          </p>
+        </div>
       </div>
       <div className="modal-footer" style={{ padding: '1rem 0 0', border: 'none' }}>
         <button type="button" className="btn btn-secondary" onClick={onCancel}>Batal</button>

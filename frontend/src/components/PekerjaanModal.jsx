@@ -44,6 +44,15 @@ export default function PekerjaanModal({
   const employeeId = employee?.id;
   const hasEmployeeNo = employee?.employee_no && !String(employee.employee_no).startsWith('DRAFT/');
 
+  async function handleCreateEmployeeShift(empId, data) {
+    const res = await createEmployeeShift(empId, data);
+    const gen = res.schedules_generated;
+    if (gen?.created > 0) {
+      window.alert(`Jadwal kerja otomatis: ${gen.created} hari dibuat (${gen.from} s/d ${gen.to})${gen.skipped ? `, ${gen.skipped} hari sudah ada` : ''}.`);
+    }
+    return res;
+  }
+
   const AttendanceFormBound = useMemo(() => function BoundAttendanceForm(props) {
     const [schedules, setSchedules] = useState([]);
     useEffect(() => {
@@ -183,7 +192,7 @@ export default function PekerjaanModal({
               emptyForm={EMPTY_EMPLOYEE_SHIFT_FORM}
               toFormData={toEmployeeShiftFormData}
               fetchFn={fetchEmployeeShifts}
-              createFn={createEmployeeShift}
+              createFn={handleCreateEmployeeShift}
               updateFn={updateEmployeeShift}
               deleteFn={deleteEmployeeShift}
               FormComponent={EmployeeShiftForm}
