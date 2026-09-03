@@ -1,6 +1,6 @@
 import { createMasterRouter } from '../utils/masterRouter.js';
 import { enrichShiftRow } from '../utils/shiftHelpers.js';
-import { deriveCellColors } from '../utils/colorUtils.js';
+import { deriveCellColors, defaultShiftColorForCode } from '../utils/colorUtils.js';
 
 const toRes = (r) => enrichShiftRow(r);
 
@@ -22,6 +22,11 @@ export default createMasterRouter({
     d.early_out_tolerance_minutes = parseInt(d.early_out_tolerance_minutes, 10) || 0;
     if (d.color_bg) {
       const colors = deriveCellColors(d.color_bg);
+      d.color_bg = colors.bg;
+      d.color_fg = colors.fg;
+      d.color_border = colors.border;
+    } else if (d.code) {
+      const colors = defaultShiftColorForCode(d.code);
       d.color_bg = colors.bg;
       d.color_fg = colors.fg;
       d.color_border = colors.border;

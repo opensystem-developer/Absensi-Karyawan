@@ -3,8 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { formatDate, toInputDate } from '../utils/date';
 import DateInput from './DateInput';
 import ExcelColorPicker from './ExcelColorPicker';
+import { defaultShiftColorForCode } from '../utils/shiftColors';
+import { normalizeHex } from '../utils/excelColorPalette';
 
-export default function CrudPage({ title, subtitle, api, columns, fields, canWrite = true, filterBar }) {
+export default function CrudPage({ title, subtitle, api, columns, fields, canWrite = true, filterBar, onSaved }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -50,6 +52,9 @@ export default function CrudPage({ title, subtitle, api, columns, fields, canWri
       let val = item[field.name];
       if (field.type === 'boolean') val = !!val;
       if (field.type === 'date' && val) val = toInputDate(val);
+      if (field.type === 'color' && !val && item.code) {
+        val = defaultShiftColorForCode(item.code).bg;
+      }
       f[field.name] = val ?? '';
     }
     setForm(f);
@@ -66,11 +71,18 @@ export default function CrudPage({ title, subtitle, api, columns, fields, canWri
       for (const field of fields) {
         if (field.type === 'boolean') payload[field.name] = !!payload[field.name];
         if (field.type === 'number' && payload[field.name] !== '') payload[field.name] = parseInt(payload[field.name], 10);
+        if (field.type === 'color') {
+          const hex = normalizeHex(payload[field.name]);
+          if (hex) payload[field.name] = hex;
+          else if (payload.code) payload[field.name] = defaultShiftColorForCode(payload.code).bg;
+          else delete payload[field.name];
+        }
       }
       if (editing) await api.update(editing.id, payload);
       else await api.create(payload);
       setModalOpen(false);
       load();
+      if (onSaved) await onSaved(payload);
     } catch (err) {
       setError(err.message);
     } finally {

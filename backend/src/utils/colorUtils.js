@@ -64,6 +64,14 @@ export function enrichShiftColorFields(shift) {
       color_border: shift.color_border || shift.color_bg,
     };
   }
+  if (shift.color_bg) {
+    const derived = deriveCellColors(shift.color_bg);
+    return {
+      ...shift,
+      color_fg: derived.fg,
+      color_border: shift.color_border || derived.border,
+    };
+  }
   const defaults = defaultShiftColorForCode(shift.code);
   return {
     ...shift,

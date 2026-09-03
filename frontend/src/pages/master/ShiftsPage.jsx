@@ -1,12 +1,16 @@
 import CrudPage from '../../components/CrudPage';
 import { shiftsApi } from '../../api';
+import { useDisplayColors } from '../../context/DisplayColorContext';
 
 export default function ShiftsPage() {
+  const { refresh } = useDisplayColors();
+
   return (
     <CrudPage
       title="Shift"
       subtitle="Kelola definisi shift kerja"
       api={shiftsApi}
+      onSaved={() => refresh()}
       columns={[
         { key: 'code', label: 'Kode' },
         { key: 'name', label: 'Nama' },

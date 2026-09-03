@@ -5,6 +5,7 @@ import { EMPTY_WORK_SCHEDULE_FORM, toWorkScheduleFormData } from '../shiftConsta
 import { WorkScheduleForm } from '../components/ShiftForms';
 import WorkScheduleGrid from '../components/WorkScheduleGrid';
 import DisplayColorSettingsModal from '../components/DisplayColorSettingsModal';
+import { useDisplayColors } from '../context/DisplayColorContext';
 import { useAuth } from '../context/AuthContext';
 import { currentMonthKey, monthBounds } from '../utils/scheduleMonth';
 
@@ -21,6 +22,7 @@ export default function WorkSchedulesPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const { canWrite } = useAuth();
+  const { refresh: refreshColors } = useDisplayColors();
   const writable = canWrite('karyawan');
   const colorWritable = writable || canWrite('master');
 
@@ -45,7 +47,8 @@ export default function WorkSchedulesPage() {
 
   useEffect(() => {
     fetchKaryawan().then(setEmployees).catch(() => {});
-  }, []);
+    refreshColors().catch(() => {});
+  }, [refreshColors]);
   useEffect(() => { load(); }, [load]);
 
   const rows = useMemo(() => {
