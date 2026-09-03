@@ -1,35 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { workSchedulesApi, fetchKaryawan } from '../api';
+import { workSchedulesApi, fetchKaryawan, shiftsApi } from '../api';
 import { formatDate } from '../constants';
-import { EMPTY_WORK_SCHEDULE_FORM, toWorkScheduleFormData, workScheduleStatusLabel } from '../shiftConstants';
+import { EMPTY_WORK_SCHEDULE_FORM, toWorkScheduleFormData } from '../shiftConstants';
 import { WorkScheduleForm } from '../components/ShiftForms';
+import WorkScheduleGrid from '../components/WorkScheduleGrid';
 import { useAuth } from '../context/AuthContext';
-
-function monthBounds(ym) {
-  const [y, m] = ym.split('-').map(Number);
-  const last = new Date(y, m, 0).getDate();
-  return {
-    from: `${ym}-01`,
-    to: `${ym}-${String(last).padStart(2, '0')}`,
-    label: new Date(y, m - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
-  };
-}
-
-function shiftMonth(ym, delta) {
-  const [y, m] = ym.split('-').map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
+import { currentMonthKey, monthBounds } from '../utils/scheduleMonth';
 
 export default function WorkSchedulesPage() {
   const [items, setItems] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [employeeFilter, setEmployeeFilter] = useState('');
-  const [month, setMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const [month, setMonth] = useState(currentMonthKey);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_WORK_SCHEDULE_FORM, employee_id: '' });
@@ -49,6 +33,7 @@ export default function WorkSchedulesPage() {
       });
       if (employeeFilter) params.set('employee_id', employeeFilter);
       setItems(await workSchedulesApi.list(params.toString()));
+      setError('');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,12 +41,29 @@ export default function WorkSchedulesPage() {
     }
   }, [employeeFilter, bounds.from, bounds.to]);
 
-  useEffect(() => { fetchKaryawan().then(setEmployees).catch(() => {}); }, []);
+  useEffect(() => {
+    fetchKaryawan().then(setEmployees).catch(() => {});
+    shiftsApi.list().then(setShifts).catch(() => {});
+  }, []);
   useEffect(() => { load(); }, [load]);
 
-  function openCreate() {
+  const rows = useMemo(() => {
+    if (employeeFilter) {
+      const emp = employees.find((e) => String(e.id) === String(employeeFilter));
+      if (!emp) return [];
+      return [{ id: emp.id, name: emp.nama_lengkap, subtitle: emp.employee_no }];
+    }
+
+    const ids = new Set(items.map((i) => i.employee_id));
+    return employees
+      .filter((e) => ids.has(e.id))
+      .map((e) => ({ id: e.id, name: e.nama_lengkap, subtitle: e.employee_no }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  }, [employeeFilter, employees, items]);
+
+  function openCreate(date = bounds.from, employeeId = employeeFilter || '') {
     setEditing(null);
-    setForm({ ...EMPTY_WORK_SCHEDULE_FORM, employee_id: employeeFilter || '', work_date: bounds.from });
+    setForm({ ...EMPTY_WORK_SCHEDULE_FORM, employee_id: employeeId, work_date: date });
     setError('');
     setModalOpen(true);
   }
@@ -71,6 +73,11 @@ export default function WorkSchedulesPage() {
     setForm({ ...toWorkScheduleFormData(item), employee_id: item.employee_id });
     setError('');
     setModalOpen(true);
+  }
+
+  function handleCellClick(row, item, date) {
+    if (item) openEdit(item);
+    else openCreate(date, row.id);
   }
 
   async function handleSubmit() {
@@ -92,80 +99,38 @@ export default function WorkSchedulesPage() {
     }
   }
 
-  async function handleDelete(item) {
-    if (!confirm(`Hapus jadwal ${formatDate(item.work_date)}?`)) return;
-    try {
-      await workSchedulesApi.delete(item.id);
-      load();
-    } catch (err) {
-      alert(err.message);
-    }
-  }
+  const employeeFilterSelect = (
+    <select className="filter-select" value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)}>
+      <option value="">Semua Karyawan</option>
+      {employees.map((e) => <option key={e.id} value={e.id}>{e.nama_lengkap} ({e.employee_no})</option>)}
+    </select>
+  );
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1>Jadwal Kerja</h1>
-          <p>Tabel jadwal kerja harian karyawan per bulan</p>
+          <p>Grid jadwal kerja per karyawan dan tanggal (format Excel)</p>
         </div>
-        {writable && <button className="btn btn-primary" onClick={openCreate}>+ Tambah Jadwal</button>}
+        {writable && <button className="btn btn-primary" onClick={() => openCreate()}>+ Tambah Jadwal</button>}
       </div>
 
-      <div className="toolbar schedule-table-toolbar" style={{ marginBottom: '1rem' }}>
-        <select className="filter-select" value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)}>
-          <option value="">Semua Karyawan</option>
-          {employees.map((e) => <option key={e.id} value={e.id}>{e.nama_lengkap} ({e.employee_no})</option>)}
-        </select>
-        <div className="month-nav">
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setMonth(shiftMonth(month, -1))}>&larr;</button>
-          <span className="month-nav-label">{bounds.label}</span>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setMonth(shiftMonth(month, 1))}>&rarr;</button>
-        </div>
-      </div>
+      {error && <div className="error-banner" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-      <div className="card">
-        {loading ? <div className="loading">Memuat data...</div> : items.length === 0 ? (
-          <div className="empty-state"><p>Belum ada jadwal kerja untuk {bounds.label}.</p></div>
-        ) : (
-          <div className="table-wrap">
-            <table className="schedule-table">
-              <thead>
-                <tr>
-                  <th>Tanggal</th>
-                  <th>Karyawan</th>
-                  <th>No. Karyawan</th>
-                  <th>Shift</th>
-                  <th>Jam Mulai</th>
-                  <th>Jam Selesai</th>
-                  <th>Status</th>
-                  {writable && <th>Aksi</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id}>
-                    <td><strong>{formatDate(item.work_date)}</strong></td>
-                    <td>{item.employee_name}</td>
-                    <td className="text-muted">{item.employee_no}</td>
-                    <td>{item.shift_name} ({item.shift_code})</td>
-                    <td>{item.start_time || item.shift_start || '-'}</td>
-                    <td>{item.end_time || item.shift_end || '-'}</td>
-                    <td><span className="badge badge-type-ktp">{workScheduleStatusLabel(item.status)}</span></td>
-                    {writable && (
-                      <td>
-                        <div className="actions">
-                          <button className="btn btn-secondary btn-sm" onClick={() => openEdit(item)}>Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={() => handleDelete(item)}>Hapus</button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <div className="card" style={{ padding: '1rem' }}>
+        <WorkScheduleGrid
+          month={month}
+          onMonthChange={setMonth}
+          rows={rows}
+          schedules={items}
+          shifts={shifts}
+          loading={loading}
+          writable={writable}
+          onCellClick={writable ? handleCellClick : undefined}
+          toolbarExtra={employeeFilterSelect}
+          emptyMessage={`Belum ada jadwal kerja untuk ${bounds.label}.`}
+        />
       </div>
 
       {modalOpen && (
@@ -184,6 +149,11 @@ export default function WorkSchedulesPage() {
                     {employees.map((e) => <option key={e.id} value={e.id}>{e.nama_lengkap}</option>)}
                   </select>
                 </div>
+              )}
+              {editing && (
+                <p className="text-muted" style={{ marginBottom: '1rem' }}>
+                  {editing.employee_name} · {formatDate(editing.work_date)}
+                </p>
               )}
               <WorkScheduleForm
                 form={form}

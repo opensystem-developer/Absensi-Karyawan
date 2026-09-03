@@ -213,6 +213,8 @@ export default function PekerjaanModal({
           {activeTab === 'jadwal' && employeeId && (
             <WorkScheduleTable
               employeeId={employeeId}
+              employeeName={employee?.nama_lengkap}
+              employeeNo={displayEmployeeNo(employee?.employee_no)}
               fetchFn={fetchWorkSchedules}
               createFn={createWorkSchedule}
               updateFn={updateWorkSchedule}
