@@ -8,7 +8,7 @@ import DisplayColorSettingsModal from '../components/DisplayColorSettingsModal';
 import { useDisplayColors } from '../context/DisplayColorContext';
 import { useAuth } from '../context/AuthContext';
 import { currentMonthKey, monthBounds } from '../utils/scheduleMonth';
-import { toScheduleGridRow, toScheduleGridRows } from '../utils/scheduleGridRow';
+import { toScheduleGridRow, toScheduleGridRows, sortScheduleGridRows } from '../utils/scheduleGridRow';
 
 export default function WorkSchedulesPage() {
   const [items, setItems] = useState([]);
@@ -22,6 +22,7 @@ export default function WorkSchedulesPage() {
   const [form, setForm] = useState({ ...EMPTY_WORK_SCHEDULE_FORM, employee_id: '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [rowSort, setRowSort] = useState('name');
   const { canWrite } = useAuth();
   const { refresh: refreshColors } = useDisplayColors();
   const writable = canWrite('karyawan');
@@ -63,8 +64,8 @@ export default function WorkSchedulesPage() {
     }
 
     const ids = new Set(items.map((i) => i.employee_id));
-    return toScheduleGridRows(employees, ids, items);
-  }, [employeeFilter, employees, items]);
+    return sortScheduleGridRows(toScheduleGridRows(employees, ids, items), rowSort);
+  }, [employeeFilter, employees, items, rowSort]);
 
   function openCreate(date = bounds.from, employeeId = employeeFilter || '') {
     setEditing(null);
@@ -104,11 +105,19 @@ export default function WorkSchedulesPage() {
     }
   }
 
-  const employeeFilterSelect = (
-    <select className="filter-select" value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)}>
-      <option value="">Semua Karyawan</option>
-      {employees.map((e) => <option key={e.id} value={e.id}>{e.nama_lengkap} ({e.employee_no})</option>)}
-    </select>
+  const toolbarFilters = (
+    <>
+      <select className="filter-select" value={employeeFilter} onChange={(e) => setEmployeeFilter(e.target.value)}>
+        <option value="">Semua Karyawan</option>
+        {employees.map((e) => <option key={e.id} value={e.id}>{e.nama_lengkap} ({e.employee_no})</option>)}
+      </select>
+      {!employeeFilter && (
+        <select className="filter-select" value={rowSort} onChange={(e) => setRowSort(e.target.value)} aria-label="Urutkan baris">
+          <option value="name">Urut: Nama</option>
+          <option value="position">Urut: Jabatan</option>
+        </select>
+      )}
+    </>
   );
 
   return (
@@ -137,7 +146,7 @@ export default function WorkSchedulesPage() {
           loading={loading}
           writable={writable}
           onCellClick={writable ? handleCellClick : undefined}
-          toolbarExtra={employeeFilterSelect}
+          toolbarExtra={toolbarFilters}
           emptyMessage={`Belum ada jadwal kerja untuk ${bounds.label}.`}
           fitMonth
         />

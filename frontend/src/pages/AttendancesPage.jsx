@@ -4,7 +4,7 @@ import AttendanceGrid from '../components/AttendanceGrid';
 import DisplayColorSettingsModal from '../components/DisplayColorSettingsModal';
 import { useAuth } from '../context/AuthContext';
 import { currentMonthKey, monthBounds } from '../utils/scheduleMonth';
-import { toScheduleGridRow, toScheduleGridRows } from '../utils/scheduleGridRow';
+import { toScheduleGridRow, toScheduleGridRows, sortScheduleGridRows } from '../utils/scheduleGridRow';
 
 export default function AttendancesPage() {
   const [items, setItems] = useState([]);
@@ -52,7 +52,7 @@ export default function AttendancesPage() {
     }
 
     const ids = new Set(items.map((i) => i.employee_id));
-    return toScheduleGridRows(employees, ids, items);
+    return sortScheduleGridRows(toScheduleGridRows(employees, ids, items), 'name');
   }, [employeeFilter, employees, items]);
 
   const employeeFilterSelect = (

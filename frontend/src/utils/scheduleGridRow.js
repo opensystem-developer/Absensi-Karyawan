@@ -39,6 +39,25 @@ export function toScheduleGridRows(employees, employeeIds = null, items = []) {
   return employees
     .filter((e) => !idSet || idSet.has(e.id))
     .map((e) => toScheduleGridRow(e, positionsByEmployee.get(e.id)))
-    .filter(Boolean)
-    .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+    .filter(Boolean);
+}
+
+/** Urutkan baris grid jadwal: nama atau jabatan (kode singkat). */
+export function sortScheduleGridRows(rows, sortBy = 'name') {
+  const sorted = [...rows];
+  if (sortBy === 'position') {
+    sorted.sort((a, b) => {
+      const pa = a.positionShort || '';
+      const pb = b.positionShort || '';
+      if (!pa && pb) return 1;
+      if (pa && !pb) return -1;
+      const byPosition = pa.localeCompare(pb, 'id', { sensitivity: 'base' });
+      if (byPosition !== 0) return byPosition;
+      return a.name.localeCompare(b.name, 'id');
+    });
+    return sorted;
+  }
+
+  sorted.sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  return sorted;
 }
