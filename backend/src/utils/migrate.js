@@ -36,7 +36,8 @@ function recreateDepartmentBranches(db) {
 export function runMigrations(db) {
   const tables = [
     'roles', 'users', 'companies', 'branches', 'departments', 'positions',
-    'employment_statuses', 'karyawan', 'employee_positions', 'employee_contracts',
+    'employment_statuses', 'shifts', 'employee_shifts', 'work_schedules', 'attendances',
+    'karyawan', 'employee_positions', 'employee_contracts',
     'alamat_karyawan', 'kontak_karyawan', 'keluarga_karyawan', 'pendidikan_karyawan',
   ];
   for (const table of tables) {

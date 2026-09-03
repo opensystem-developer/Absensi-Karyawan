@@ -6,6 +6,9 @@ import keluargaRouter from './keluarga.js';
 import pendidikanRouter from './pendidikan.js';
 import posisiRouter from './posisi.js';
 import kontrakRouter from './kontrak.js';
+import employeeShiftsRouter from './employeeShifts.js';
+import workSchedulesRouter from './workSchedules.js';
+import attendancesRouter from './attendances.js';
 import {
   getUserId, withAuditOnCreate, withAuditOnUpdate, softDeleteParams,
   NOT_DELETED, handleDbError,
@@ -90,6 +93,9 @@ router.use('/:employeeId/keluarga', keluargaRouter);
 router.use('/:employeeId/pendidikan', pendidikanRouter);
 router.use('/:employeeId/posisi', posisiRouter);
 router.use('/:employeeId/kontrak', kontrakRouter);
+router.use('/:employeeId/employee-shifts', employeeShiftsRouter);
+router.use('/:employeeId/work-schedules', workSchedulesRouter);
+router.use('/:employeeId/attendances', attendancesRouter);
 
 router.get('/:id', (req, res) => {
   try {

@@ -98,6 +98,64 @@ db.exec(`
     ${AUDIT_COLS}
   );
 
+  CREATE TABLE IF NOT EXISTS shifts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code VARCHAR(30) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    start_time VARCHAR(8) NOT NULL,
+    end_time VARCHAR(8) NOT NULL,
+    break_start VARCHAR(8),
+    break_end VARCHAR(8),
+    late_tolerance_minutes INTEGER NOT NULL DEFAULT 0,
+    early_out_tolerance_minutes INTEGER NOT NULL DEFAULT 0,
+    status INTEGER NOT NULL DEFAULT 1,
+    ${AUDIT_COLS}
+  );
+
+  CREATE TABLE IF NOT EXISTS employee_shifts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL,
+    shift_id INTEGER NOT NULL,
+    effective_from DATE,
+    effective_to DATE,
+    ${AUDIT_COLS},
+    FOREIGN KEY (employee_id) REFERENCES karyawan(id),
+    FOREIGN KEY (shift_id) REFERENCES shifts(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS work_schedules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL,
+    work_date DATE NOT NULL,
+    shift_id INTEGER NOT NULL,
+    start_time VARCHAR(8),
+    end_time VARCHAR(8),
+    status VARCHAR(20) NOT NULL DEFAULT 'WORK' CHECK(status IN ('WORK', 'OFF', 'LEAVE', 'HOLIDAY')),
+    ${AUDIT_COLS},
+    FOREIGN KEY (employee_id) REFERENCES karyawan(id),
+    FOREIGN KEY (shift_id) REFERENCES shifts(id),
+    UNIQUE(employee_id, work_date)
+  );
+
+  CREATE TABLE IF NOT EXISTS attendances (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL,
+    work_date DATE NOT NULL,
+    schedule_id INTEGER,
+    clock_in DATETIME,
+    clock_out DATETIME,
+    late_minutes INTEGER NOT NULL DEFAULT 0,
+    early_out_minutes INTEGER NOT NULL DEFAULT 0,
+    overtime_minutes INTEGER NOT NULL DEFAULT 0,
+    status VARCHAR(30) NOT NULL DEFAULT 'PRESENT' CHECK(status IN ('PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'OFF')),
+    anomaly_flag INTEGER NOT NULL DEFAULT 0,
+    anomaly_reason TEXT,
+    ${AUDIT_COLS},
+    FOREIGN KEY (employee_id) REFERENCES karyawan(id),
+    FOREIGN KEY (schedule_id) REFERENCES work_schedules(id),
+    UNIQUE(employee_id, work_date)
+  );
+
   CREATE TABLE IF NOT EXISTS karyawan (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     branch_id INTEGER,
@@ -229,6 +287,9 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_karyawan_status ON karyawan(status_karyawan);
+  CREATE INDEX IF NOT EXISTS idx_work_schedules_employee_date ON work_schedules(employee_id, work_date);
+  CREATE INDEX IF NOT EXISTS idx_attendances_employee_date ON attendances(employee_id, work_date);
+  CREATE INDEX IF NOT EXISTS idx_employee_shifts_employee ON employee_shifts(employee_id);
   CREATE INDEX IF NOT EXISTS idx_activity_user ON user_activity_log(user_id);
   CREATE INDEX IF NOT EXISTS idx_change_employee ON data_change_history(employee_id);
   CREATE INDEX IF NOT EXISTS idx_change_table ON data_change_history(table_name, record_id);

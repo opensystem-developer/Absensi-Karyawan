@@ -173,6 +173,13 @@ export default function CrudPage({ title, subtitle, api, columns, fields, canWri
                           onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
                           required={field.required}
                         />
+                      ) : field.type === 'time' ? (
+                        <input
+                          type="time"
+                          value={form[field.name]}
+                          onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
+                          required={field.required}
+                        />
                       ) : (
                         <input
                           type={field.type || 'text'}

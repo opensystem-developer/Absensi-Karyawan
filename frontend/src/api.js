@@ -57,6 +57,9 @@ export const branchesApi = crud(`${API}/branches`);
 export const departmentsApi = crud(`${API}/departments`);
 export const positionsApi = crud(`${API}/positions`);
 export const employmentStatusesApi = crud(`${API}/employment-statuses`);
+export const shiftsApi = crud(`${API}/shifts`);
+export const workSchedulesApi = crud(`${API}/work-schedules`);
+export const attendancesApi = crud(`${API}/attendances`);
 export const usersApi = crud(`${API}/users`);
 
 export async function fetchRoles() {
@@ -88,6 +91,9 @@ export const keluargaApi = nested('keluarga');
 export const pendidikanApi = nested('pendidikan');
 export const posisiApi = nested('posisi');
 export const kontrakApi = nested('kontrak');
+export const employeeShiftsApi = nested('employee-shifts');
+export const workSchedulesNestedApi = nested('work-schedules');
+export const attendancesNestedApi = nested('attendances');
 
 // Backward compat exports
 export const fetchKaryawan = (params = {}) => {
@@ -121,3 +127,15 @@ export const fetchKontrak = kontrakApi.list;
 export const createKontrak = kontrakApi.create;
 export const updateKontrak = kontrakApi.update;
 export const deleteKontrak = kontrakApi.delete;
+export const fetchEmployeeShifts = employeeShiftsApi.list;
+export const createEmployeeShift = employeeShiftsApi.create;
+export const updateEmployeeShift = employeeShiftsApi.update;
+export const deleteEmployeeShift = employeeShiftsApi.delete;
+export const fetchWorkSchedules = workSchedulesNestedApi.list;
+export const createWorkSchedule = workSchedulesNestedApi.create;
+export const updateWorkSchedule = workSchedulesNestedApi.update;
+export const deleteWorkSchedule = workSchedulesNestedApi.delete;
+export const fetchAttendances = attendancesNestedApi.list;
+export const createAttendance = attendancesNestedApi.create;
+export const updateAttendance = attendancesNestedApi.update;
+export const deleteAttendance = attendancesNestedApi.delete;

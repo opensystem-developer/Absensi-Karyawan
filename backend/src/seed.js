@@ -53,6 +53,16 @@ export function seedDatabase(db) {
     INSERT INTO positions (department_id, code, name, level, status, created_by, updated_by)
     VALUES (?, 'DEV', 'Software Developer', 'Staff', 1, 'system', 'system')
   `).run(deptId);
+
+  db.prepare(`
+    INSERT INTO shifts (code, name, start_time, end_time, break_start, break_end, late_tolerance_minutes, early_out_tolerance_minutes, status, created_by, updated_by)
+    VALUES ('PAGI', 'Shift Pagi', '08:00', '17:00', '12:00', '13:00', 15, 15, 1, 'system', 'system')
+  `).run();
+
+  db.prepare(`
+    INSERT INTO shifts (code, name, start_time, end_time, break_start, break_end, late_tolerance_minutes, early_out_tolerance_minutes, status, created_by, updated_by)
+    VALUES ('SORE', 'Shift Sore', '14:00', '22:00', '18:00', '19:00', 10, 10, 1, 'system', 'system')
+  `).run();
 }
 
 export { ALL_PERMISSIONS };

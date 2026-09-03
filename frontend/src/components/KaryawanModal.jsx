@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   fetchAlamat, createAlamat, updateAlamat, deleteAlamat,
   fetchKontak, createKontak, updateKontak, deleteKontak,
@@ -6,6 +6,9 @@ import {
   fetchPendidikan, createPendidikan, updatePendidikan, deletePendidikan,
   fetchPosisi, createPosisi, updatePosisi, deletePosisi,
   fetchKontrak, createKontrak, updateKontrak, deleteKontrak,
+  fetchEmployeeShifts, createEmployeeShift, updateEmployeeShift, deleteEmployeeShift,
+  fetchWorkSchedules, createWorkSchedule, updateWorkSchedule, deleteWorkSchedule,
+  fetchAttendances, createAttendance, updateAttendance, deleteAttendance,
   fetchKaryawanChanges,
 } from '../api';
 import { formatDate, formatDateTime, formatMaybeDate } from '../constants';
@@ -15,6 +18,12 @@ import { EMPTY_KELUARGA_FORM, toKeluargaFormData } from '../keluargaConstants';
 import { EMPTY_PENDIDIKAN_FORM, toPendidikanFormData } from '../pendidikanConstants';
 import { EMPTY_POSISI_FORM, toPosisiFormData } from '../posisiConstants';
 import { EMPTY_KONTRAK_FORM, toKontrakFormData } from '../kontrakConstants';
+import {
+  EMPTY_EMPLOYEE_SHIFT_FORM, toEmployeeShiftFormData,
+  EMPTY_WORK_SCHEDULE_FORM, toWorkScheduleFormData,
+  EMPTY_ATTENDANCE_FORM, toAttendanceFormData,
+  workScheduleStatusLabel, attendanceStatusLabel, formatTimeRange,
+} from '../shiftConstants';
 import { KaryawanFormFields } from './KaryawanForm';
 import EntityManager from './EntityManager';
 import AlamatForm from './AlamatForm';
@@ -22,6 +31,7 @@ import KontakForm from './KontakForm';
 import KeluargaForm from './KeluargaForm';
 import PendidikanForm from './PendidikanForm';
 import PosisiForm, { KontrakForm } from './PosisiKontrakForms';
+import { EmployeeShiftForm, WorkScheduleForm, AttendanceForm } from './ShiftForms';
 
 const TABS = [
   { id: 'utama', label: 'Data Utama', always: true },
@@ -31,6 +41,9 @@ const TABS = [
   { id: 'pendidikan', label: 'Pendidikan' },
   { id: 'posisi', label: 'Posisi' },
   { id: 'kontrak', label: 'Kontrak' },
+  { id: 'shift', label: 'Shift' },
+  { id: 'jadwal', label: 'Jadwal' },
+  { id: 'kehadiran', label: 'Kehadiran' },
   { id: 'riwayat', label: 'Riwayat' },
 ];
 
@@ -48,6 +61,14 @@ export default function KaryawanModal({
   const [activeTab, setActiveTab] = useState('utama');
   const [changes, setChanges] = useState([]);
   const isEdit = !!employeeId;
+
+  const AttendanceFormBound = useMemo(() => function BoundAttendanceForm(props) {
+    const [schedules, setSchedules] = useState([]);
+    useEffect(() => {
+      if (employeeId) fetchWorkSchedules(employeeId).then(setSchedules).catch(() => setSchedules([]));
+    }, []);
+    return <AttendanceForm {...props} schedules={schedules} />;
+  }, [employeeId]);
 
   useEffect(() => {
     setActiveTab('utama');
@@ -297,6 +318,100 @@ export default function KaryawanModal({
                   <div className="entity-detail">
                     {k.start_date && <span>{formatDate(k.start_date)}</span>}
                     {k.end_date && <span> - {formatDate(k.end_date)}</span>}
+                  </div>
+                </>
+              )}
+            />
+          )}
+
+          {activeTab === 'shift' && employeeId && (
+            <EntityManager
+              employeeId={employeeId}
+              entityLabel="Shift karyawan"
+              addLabel="Tambah Shift"
+              emptyForm={EMPTY_EMPLOYEE_SHIFT_FORM}
+              toFormData={toEmployeeShiftFormData}
+              fetchFn={fetchEmployeeShifts}
+              createFn={createEmployeeShift}
+              updateFn={updateEmployeeShift}
+              deleteFn={deleteEmployeeShift}
+              FormComponent={EmployeeShiftForm}
+              writable={writable}
+              renderCard={(s) => (
+                <>
+                  <p className="entity-text"><strong>{s.shift_name}</strong> ({s.shift_code})</p>
+                  <div className="entity-detail">
+                    <span>{formatTimeRange(s.shift_start, s.shift_end)}</span>
+                    {s.effective_from && <span>Mulai {formatDate(s.effective_from)}</span>}
+                    {s.effective_to && <span>s/d {formatDate(s.effective_to)}</span>}
+                  </div>
+                </>
+              )}
+            />
+          )}
+
+          {activeTab === 'jadwal' && employeeId && (
+            <EntityManager
+              employeeId={employeeId}
+              entityLabel="Jadwal kerja"
+              addLabel="Tambah Jadwal"
+              emptyForm={EMPTY_WORK_SCHEDULE_FORM}
+              toFormData={toWorkScheduleFormData}
+              fetchFn={fetchWorkSchedules}
+              createFn={createWorkSchedule}
+              updateFn={updateWorkSchedule}
+              deleteFn={deleteWorkSchedule}
+              FormComponent={WorkScheduleForm}
+              writable={writable}
+              renderCard={(j) => (
+                <>
+                  <div className="entity-card-header">
+                    <span className="badge badge-type-ktp">{workScheduleStatusLabel(j.status)}</span>
+                  </div>
+                  <p className="entity-text"><strong>{formatDate(j.work_date)}</strong> — {j.shift_name}</p>
+                  <div className="entity-detail">
+                    <span>{formatTimeRange(j.start_time || j.shift_start, j.end_time || j.shift_end)}</span>
+                  </div>
+                </>
+              )}
+            />
+          )}
+
+          {activeTab === 'kehadiran' && employeeId && (
+            <EntityManager
+              employeeId={employeeId}
+              entityLabel="Kehadiran"
+              addLabel="Tambah Kehadiran"
+              emptyForm={EMPTY_ATTENDANCE_FORM}
+              toFormData={toAttendanceFormData}
+              fetchFn={fetchAttendances}
+              createFn={(empId, data) => createAttendance(empId, {
+                ...data,
+                clock_in: data.clock_in ? data.clock_in.replace('T', ' ') : null,
+                clock_out: data.clock_out ? data.clock_out.replace('T', ' ') : null,
+                schedule_id: data.schedule_id || null,
+              })}
+              updateFn={(empId, id, data) => updateAttendance(empId, id, {
+                ...data,
+                clock_in: data.clock_in ? data.clock_in.replace('T', ' ') : null,
+                clock_out: data.clock_out ? data.clock_out.replace('T', ' ') : null,
+                schedule_id: data.schedule_id || null,
+              })}
+              deleteFn={deleteAttendance}
+              FormComponent={AttendanceFormBound}
+              writable={writable}
+              renderCard={(a) => (
+                <>
+                  <div className="entity-card-header">
+                    <span className="badge badge-type-ktp">{attendanceStatusLabel(a.status)}</span>
+                    {a.anomaly_flag && <span className="badge badge-type-emergency">Anomali</span>}
+                  </div>
+                  <p className="entity-text"><strong>{formatDate(a.work_date)}</strong></p>
+                  <div className="entity-detail">
+                    <span>In: {formatDateTime(a.clock_in)}</span>
+                    <span>Out: {formatDateTime(a.clock_out)}</span>
+                    {a.late_minutes > 0 && <span>Telat {a.late_minutes} mnt</span>}
+                    {a.overtime_minutes > 0 && <span>Lembur {a.overtime_minutes} mnt</span>}
                   </div>
                 </>
               )}

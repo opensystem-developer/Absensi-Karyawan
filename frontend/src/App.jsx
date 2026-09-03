@@ -10,6 +10,9 @@ import BranchesPage from './pages/master/BranchesPage';
 import DepartmentsPage from './pages/master/DepartmentsPage';
 import PositionsPage from './pages/master/PositionsPage';
 import EmploymentStatusesPage from './pages/master/EmploymentStatusesPage';
+import ShiftsPage from './pages/master/ShiftsPage';
+import WorkSchedulesPage from './pages/WorkSchedulesPage';
+import AttendancesPage from './pages/AttendancesPage';
 import UsersPage from './pages/UsersPage';
 import ActivityLogPage from './pages/ActivityLogPage';
 import ChangeHistoryPage from './pages/ChangeHistoryPage';
@@ -27,6 +30,9 @@ function AppRoutes() {
         <Route path="departemen" element={<ProtectedRoute permission="org:read"><DepartmentsPage /></ProtectedRoute>} />
         <Route path="jabatan" element={<ProtectedRoute permission="org:read"><PositionsPage /></ProtectedRoute>} />
         <Route path="status-karyawan" element={<ProtectedRoute permission="master:read"><EmploymentStatusesPage /></ProtectedRoute>} />
+        <Route path="shift" element={<ProtectedRoute permission="master:read"><ShiftsPage /></ProtectedRoute>} />
+        <Route path="jadwal-kerja" element={<ProtectedRoute permission="karyawan:read"><WorkSchedulesPage /></ProtectedRoute>} />
+        <Route path="kehadiran" element={<ProtectedRoute permission="karyawan:read"><AttendancesPage /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute permission="users:read"><UsersPage /></ProtectedRoute>} />
         <Route path="activity-log" element={<ProtectedRoute permission="logs:read"><ActivityLogPage /></ProtectedRoute>} />
         <Route path="change-history" element={<ProtectedRoute permission="logs:read"><ChangeHistoryPage /></ProtectedRoute>} />

@@ -9,6 +9,8 @@ import positionsRouter from './routes/positions.js';
 import employmentStatusesRouter from './routes/employmentStatuses.js';
 import usersRouter from './routes/users.js';
 import logsRouter from './routes/logs.js';
+import shiftsRouter from './routes/shifts.js';
+import { workSchedulesGlobalRouter, attendancesGlobalRouter } from './routes/attendanceGlobal.js';
 import { authenticate, requirePermission } from './middleware/auth.js';
 import './db.js';
 
@@ -36,6 +38,9 @@ app.use('/api/branches', requirePermission('master:read', 'master:write', 'org:r
 app.use('/api/departments', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), departmentsRouter);
 app.use('/api/positions', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), positionsRouter);
 app.use('/api/employment-statuses', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), employmentStatusesRouter);
+app.use('/api/shifts', requirePermission('master:read', 'master:write', 'org:read', 'org:write', '*'), shiftsRouter);
+app.use('/api/work-schedules', requirePermission('karyawan:read', 'karyawan:write', 'org:read', 'org:write', '*'), workSchedulesGlobalRouter);
+app.use('/api/attendances', requirePermission('karyawan:read', 'karyawan:write', 'org:read', 'org:write', '*'), attendancesGlobalRouter);
 app.use('/api/users', requirePermission('users:read', 'users:write', '*'), usersRouter);
 app.use('/api/logs', requirePermission('logs:read', '*'), logsRouter);
 
