@@ -157,3 +157,22 @@ Aplikasi web berjalan di `http://localhost:5173`
 | DELETE | `/api/karyawan/:employeeId/pendidikan/:id` | Hapus pendidikan |
 
 > Header `X-User-Id` digunakan untuk audit trail (created_by, updated_by, deleted_by).
+
+## Deploy ke Cloudflare
+
+Aplikasi ini sudah disiapkan untuk migrasi ke **Cloudflare Workers + D1**.
+
+Panduan lengkap: **[docs/CLOUDFLARE-MIGRATION.md](docs/CLOUDFLARE-MIGRATION.md)**
+
+Ringkasan cepat:
+
+```bash
+npx wrangler login
+npx wrangler d1 create absensi-karyawan-db   # salin database_id ke wrangler.jsonc
+npm run cf:migrate                            # apply schema ke D1
+npm run cf:export-data                        # export data SQLite lokal
+npx wrangler secret put JWT_SECRET
+npm run cf:deploy
+```
+
+**Status:** Frontend + `/api/health` siap deploy. Porting API penuh ke D1 (async) masih dalam progres — lihat panduan untuk opsi hybrid sementara.

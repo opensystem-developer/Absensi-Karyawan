@@ -3,9 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend && npm install --prefix worker",
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix frontend",
-    "start:backend": "npm start --prefix backend"
+    "start:backend": "npm start --prefix backend",
+    "build:cf": "npm run build --prefix frontend",
+    "cf:dev": "npm run build:cf && wrangler dev",
+    "cf:deploy": "npm run build:cf && wrangler deploy",
+    "cf:migrate": "wrangler d1 migrations apply absensi-karyawan-db --remote",
+    "cf:migrate:local": "wrangler d1 migrations apply absensi-karyawan-db --local",
+    "cf:export-data": "node scripts/export-sqlite-to-d1.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.128.0"
   }
 }
