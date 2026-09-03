@@ -43,9 +43,11 @@ export function seedDatabase(db) {
   `).run(companyId).lastInsertRowid;
 
   const deptId = db.prepare(`
-    INSERT INTO departments (branch_id, code, name, status, created_by, updated_by)
-    VALUES (?, 'IT', 'Teknologi Informasi', 1, 'system', 'system')
-  `).run(branchId).lastInsertRowid;
+    INSERT INTO departments (code, name, scope, status, created_by, updated_by)
+    VALUES ('IT', 'Teknologi Informasi', 'BRANCH', 1, 'system', 'system')
+  `).run().lastInsertRowid;
+
+  db.prepare('INSERT INTO department_branches (department_id, branch_id) VALUES (?, ?)').run(deptId, branchId);
 
   db.prepare(`
     INSERT INTO positions (department_id, code, name, level, status, created_by, updated_by)

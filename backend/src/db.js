@@ -64,13 +64,19 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS departments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    branch_id INTEGER NOT NULL,
-    code VARCHAR(30) NOT NULL,
+    code VARCHAR(30) NOT NULL UNIQUE,
     name VARCHAR(100) NOT NULL,
+    scope VARCHAR(20) NOT NULL DEFAULT 'BRANCH' CHECK(scope IN ('ALL', 'BRANCH')),
     status INTEGER NOT NULL DEFAULT 1,
-    ${AUDIT_COLS},
-    FOREIGN KEY (branch_id) REFERENCES branches(id),
-    UNIQUE(branch_id, code)
+    ${AUDIT_COLS}
+  );
+
+  CREATE TABLE IF NOT EXISTS department_branches (
+    department_id INTEGER NOT NULL,
+    branch_id INTEGER NOT NULL,
+    PRIMARY KEY (department_id, branch_id),
+    FOREIGN KEY (department_id) REFERENCES departments(id),
+    FOREIGN KEY (branch_id) REFERENCES branches(id)
   );
 
   CREATE TABLE IF NOT EXISTS positions (

@@ -502,6 +502,44 @@ tr:hover td {
   color: var(--text);
 }
 
+.scope-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.radio-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: #fafbfc;
+}
+
+.radio-card:has(input:checked) {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+
+.radio-card input { margin-top: 0.2rem; flex-shrink: 0; }
+.radio-card strong { display: block; font-size: 0.9rem; margin-bottom: 0.15rem; }
+.radio-card p { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fafbfc;
+}
+
 /* Panel Layout */
 .panel-layout {
   display: flex;
