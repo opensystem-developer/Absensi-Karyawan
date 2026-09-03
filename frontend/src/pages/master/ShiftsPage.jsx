@@ -25,9 +25,7 @@ export default function ShiftsPage() {
         { name: 'break_end', label: 'Selesai Istirahat', type: 'time' },
         { name: 'late_tolerance_minutes', label: 'Toleransi Keterlambatan (menit)', type: 'number', default: 0 },
         { name: 'early_out_tolerance_minutes', label: 'Toleransi Pulang Cepat (menit)', type: 'number', default: 0 },
-        { name: 'color_bg', label: 'Warna Latar Sel', type: 'color' },
-        { name: 'color_fg', label: 'Warna Teks Sel', type: 'color' },
-        { name: 'color_border', label: 'Warna Border Sel', type: 'color' },
+        { name: 'color_bg', label: 'Warna Tampilan', type: 'color' },
         { name: 'status', label: 'Status', type: 'boolean', default: true },
       ]}
     />

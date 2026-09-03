@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { displayColorsApi } from '../api';
 import { useDisplayColors } from '../context/DisplayColorContext';
+import { deriveCellColors } from '../utils/colorUtils';
 
 const SCHEDULE_KEYS = [
   { status: 'OFF', label: 'Libur', cellCode: 'OFF' },
@@ -16,37 +17,27 @@ const ATTENDANCE_KEYS = [
   { status: 'OFF', label: 'Libur', cellCode: 'OFF' },
 ];
 
-function ColorField({ label, value, onChange }) {
-  const v = value || '#ffffff';
-  return (
-    <div className="color-field">
-      <label>{label}</label>
-      <div className="color-field-inputs">
-        <input type="color" value={v} onChange={(e) => onChange(e.target.value)} />
-        <input type="text" value={v} onChange={(e) => onChange(e.target.value)} maxLength={7} />
-      </div>
-    </div>
-  );
-}
-
 function ColorRow({ title, code, colors, onChange }) {
-  const swatchStyle = colors?.bg && colors?.fg ? {
-    backgroundColor: colors.bg,
-    color: colors.fg,
-    borderColor: colors.border || colors.bg,
-  } : {};
+  const bg = colors?.bg || '#dbeafe';
+  const swatchStyle = {
+    backgroundColor: colors?.bg || bg,
+    color: colors?.fg || '#1e293b',
+    borderColor: colors?.border || bg,
+  };
 
   return (
-    <div className="color-settings-row">
+    <div className="color-settings-row color-settings-row-simple">
       <div className="color-settings-row-head">
         <span className="schedule-legend-code" style={swatchStyle}>{code}</span>
         <strong>{title}</strong>
       </div>
-      <div className="color-settings-fields">
-        <ColorField label="Latar" value={colors.bg} onChange={(v) => onChange({ ...colors, bg: v })} />
-        <ColorField label="Teks" value={colors.fg} onChange={(v) => onChange({ ...colors, fg: v })} />
-        <ColorField label="Border" value={colors.border} onChange={(v) => onChange({ ...colors, border: v })} />
-      </div>
+      <input
+        type="color"
+        className="color-picker-simple"
+        value={bg}
+        title="Pilih warna"
+        onChange={(e) => onChange(deriveCellColors(e.target.value))}
+      />
     </div>
   );
 }
@@ -115,7 +106,7 @@ export default function DisplayColorSettingsModal({ open, onClose, writable = tr
         <div className="modal-body modal-body-scroll">
           {error && <div className="error-banner">{error}</div>}
           <p className="text-muted" style={{ marginBottom: '1rem' }}>
-            Atur warna sel untuk jadwal kerja, kehadiran, dan setiap shift.
+            Klik kotak warna untuk memilih. Teks dan border disesuaikan otomatis.
           </p>
 
           <section className="color-settings-section">

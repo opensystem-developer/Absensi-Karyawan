@@ -181,20 +181,12 @@ export default function CrudPage({ title, subtitle, api, columns, fields, canWri
                           required={field.required}
                         />
                       ) : field.type === 'color' ? (
-                        <div className="color-field-inputs">
-                          <input
-                            type="color"
-                            value={form[field.name] || '#dbeafe'}
-                            onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
-                          />
-                          <input
-                            type="text"
-                            value={form[field.name] || ''}
-                            onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
-                            placeholder="#hex"
-                            maxLength={7}
-                          />
-                        </div>
+                        <input
+                          type="color"
+                          className="color-picker-simple"
+                          value={form[field.name] || '#dbeafe'}
+                          onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
+                        />
                       ) : (
                         <input
                           type={field.type || 'text'}
