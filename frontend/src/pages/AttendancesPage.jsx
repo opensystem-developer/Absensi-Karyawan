@@ -4,6 +4,7 @@ import AttendanceGrid from '../components/AttendanceGrid';
 import DisplayColorSettingsModal from '../components/DisplayColorSettingsModal';
 import { useAuth } from '../context/AuthContext';
 import { currentMonthKey, monthBounds } from '../utils/scheduleMonth';
+import { toScheduleGridRow, toScheduleGridRows } from '../utils/scheduleGridRow';
 
 export default function AttendancesPage() {
   const [items, setItems] = useState([]);
@@ -43,15 +44,11 @@ export default function AttendancesPage() {
   const rows = useMemo(() => {
     if (employeeFilter) {
       const emp = employees.find((e) => String(e.id) === String(employeeFilter));
-      if (!emp) return [];
-      return [{ id: emp.id, name: emp.nama_lengkap, subtitle: emp.employee_no }];
+      return emp ? [toScheduleGridRow(emp)] : [];
     }
 
     const ids = new Set(items.map((i) => i.employee_id));
-    return employees
-      .filter((e) => ids.has(e.id))
-      .map((e) => ({ id: e.id, name: e.nama_lengkap, subtitle: e.employee_no }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+    return toScheduleGridRows(employees, ids);
   }, [employeeFilter, employees, items]);
 
   const employeeFilterSelect = (

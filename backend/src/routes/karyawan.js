@@ -16,6 +16,7 @@ import {
 import { logActivity, logDataChanges, diffRecords } from '../utils/logging.js';
 import { checkMasterDataReady, assertMasterDataReady } from '../utils/masterData.js';
 import { generateEmployeeNo } from '../utils/employeeNo.js';
+import { enrichKaryawanListWithPositions, enrichKaryawanWithPosition } from '../utils/karyawanHelpers.js';
 
 const router = Router();
 
@@ -95,7 +96,7 @@ router.get('/', (req, res) => {
 
     sql += ' ORDER BY created_at DESC';
     const rows = db.prepare(sql).all(...params);
-    res.json(rows);
+    res.json(enrichKaryawanListWithPositions(db, rows));
   } catch (err) {
     handleDbError(err, res);
   }
@@ -115,7 +116,7 @@ router.get('/:id', (req, res) => {
   try {
     const row = db.prepare(`SELECT * FROM karyawan WHERE id = ? AND ${NOT_DELETED}`).get(req.params.id);
     if (!row) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
-    res.json(row);
+    res.json(enrichKaryawanWithPosition(db, row));
   } catch (err) {
     handleDbError(err, res);
   }

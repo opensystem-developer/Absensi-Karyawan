@@ -18,7 +18,7 @@
   --border: #e2e8f0;
   --radius: 10px;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --schedule-name-width: 200px;
+  --schedule-name-width: 230px;
 }
 
 html,
@@ -743,6 +743,32 @@ tr:hover td {
 
 .schedule-grid-employee .text-muted {
   font-size: 0.7rem;
+}
+
+.schedule-grid-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.35rem;
+  line-height: 1.2;
+}
+
+.schedule-grid-position {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #475569;
+  background: #e2e8f0;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+}
+
+.schedule-grid-employee-no {
+  font-size: 0.65rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .schedule-legend {

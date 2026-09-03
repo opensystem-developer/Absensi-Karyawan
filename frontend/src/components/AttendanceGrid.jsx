@@ -75,7 +75,19 @@ export default function AttendanceGrid({
               <td className="schedule-grid-sticky schedule-grid-name-col">
                 <div className="schedule-grid-employee">
                   <strong>{row.name}</strong>
-                  {row.subtitle && <span className="text-muted">{row.subtitle}</span>}
+                  {(row.positionShort || row.subtitle) && (
+                    <span className="schedule-grid-meta text-muted">
+                      {row.positionShort && (
+                        <span className="schedule-grid-position" title={row.positionName || row.positionShort}>
+                          {row.positionShort}
+                        </span>
+                      )}
+                      {row.employeeNo && <span className="schedule-grid-employee-no">{row.employeeNo}</span>}
+                      {!row.positionShort && !row.employeeNo && row.subtitle && (
+                        <span>{row.subtitle}</span>
+                      )}
+                    </span>
+                  )}
                 </div>
               </td>
               {dates.map((d) => {
